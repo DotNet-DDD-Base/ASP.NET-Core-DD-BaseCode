@@ -11,6 +11,11 @@ public class UserRepository : BaseRepository<User>, IUserRepository
     public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default) =>
         await Entities.FirstOrDefaultAsync(u => u.Email.Value == email, ct);
 
-    public override async Task<IReadOnlyList<User>> ListAsync(int skip, int take, CancellationToken ct = default) =>
-        await Entities.OrderByDescending(u => u.CreatedAt).Skip(skip).Take(take).ToListAsync(ct);
+    public override async Task<List<User>> ListAsync(int skip, int take, CancellationToken ct = default)
+    {
+        return await Entities.OrderByDescending(u => u.CreatedAt)
+                             .Skip(skip)
+                             .Take(take)
+                             .ToListAsync(ct);
+    }
 }

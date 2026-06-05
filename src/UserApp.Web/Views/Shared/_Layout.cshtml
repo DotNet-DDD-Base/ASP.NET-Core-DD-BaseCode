@@ -13,10 +13,15 @@
         <div>
             <a class="nav-link text-light d-inline" asp-controller="Users" asp-action="Index">Users</a>
         </div>
+        <a class="navbar-brand" asp-controller="Products" asp-action="Index">ProductApp</a>
+        <div>
+            <a class="nav-link text-light d-inline" asp-controller="Products" asp-action="Index">Producs</a>
+        </div>
     </div>
 </nav>
 <main class="container">
     @RenderBody()
+    @RenderSection("Scripts", required: false)
 </main>
 </body>
 </html>

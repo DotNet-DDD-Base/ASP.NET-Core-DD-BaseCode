@@ -1,4 +1,5 @@
-@model UserApp.Web.ViewModels.UserListViewModel
+@model UserApp.Web.ViewModels.ListViewModel<UserApp.Web.ViewModels.UserViewModel>
+
 @{
     ViewData["Title"] = "Users";
 }
@@ -18,8 +19,9 @@
             <th></th>
         </tr>
     </thead>
+
     <tbody>
-        @foreach (var u in Model.Users)
+        @foreach (var u in Model.Items)
         {
             <tr>
                 <td>@u.Email</td>
@@ -27,8 +29,8 @@
                 <td>@u.Status</td>
                 <td>@u.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
                 <td>
-                    <a class="btn btn-sm btn-primary" asp-action="Edit" asp-route-id="@u.Id">Edit</a>
-                    <a class="btn btn-sm btn-danger" asp-action="Delete" asp-route-id="@u.Id">Delete</a>
+                    <a asp-action="Edit" asp-route-id="@u.Id" class="btn btn-sm btn-primary">Edit</a>
+                    <a asp-action="Delete" asp-route-id="@u.Id" class="btn btn-sm btn-danger">Delete</a>
                 </td>
             </tr>
         }
