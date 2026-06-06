@@ -13,21 +13,37 @@ public class ModuleGeneratorController : Controller
         _service = service;
     }
 
+    // =========================
+    // GET
+    // =========================
     [HttpGet]
     public IActionResult Index()
     {
-        return View();
+        return View(new GenerateModuleViewModel());
     }
 
+    // =========================
+    // POST
+    // =========================
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Index(GenerateModuleViewModel vm)
     {
         if (!ModelState.IsValid)
             return View(vm);
 
-        await _service.GenerateModuleAsync(vm.ModuleName);
+        var moduleName = vm.ModuleName?.Trim();
 
-        ViewBag.Message = $"{vm.ModuleName} module generated!";
-        return View(vm);
+        if (string.IsNullOrWhiteSpace(moduleName))
+        {
+            ModelState.AddModelError(nameof(vm.ModuleName), "Module name is required.");
+            return View(vm);
+        }
+
+        await _service.GenerateModuleAsync(moduleName);
+
+        TempData["Success"] = $"{moduleName} module generated successfully!";
+
+        return RedirectToAction(nameof(Index));
     }
 }

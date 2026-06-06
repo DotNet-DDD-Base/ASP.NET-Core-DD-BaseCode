@@ -7,19 +7,39 @@ namespace UserApp.Infrastructure.Persistence;
 
 public class AppDbContext : DbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+    public AppDbContext(DbContextOptions<AppDbContext> options)
+        : base(options)
+    {
+    }
 
-    public DbSet<User> Users => Set<User>();
-    public DbSet<Product> Products { get; set; }
-    public DbSet<RefreshToken> RefreshTokens { get; set; }
+    // ==================== DBSets ====================
 
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+    // ==================== AUTO GENERATED DBSets ====================
+    // <AUTO-DBSETS-START>
+
+
+    // <AUTO-DBSETS-END>
+
+
+
+    // NEW MODULE (Payment)
+    // ==================== MODEL CONFIG ====================
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfiguration(new UserConfiguration());
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.ApplyConfiguration(new UserConfiguration());
+
+        // Product config
         modelBuilder.Entity<Product>()
-        .Property(p => p.Price)
-        .HasPrecision(18, 2);
+            .Property(p => p.Price)
+            .HasPrecision(18, 2);
+
+        // (Optional future configs)
+        // modelBuilder.ApplyConfiguration(new ProductConfiguration());
+        // modelBuilder.ApplyConfiguration(new PaymentConfiguration());
     }
 }

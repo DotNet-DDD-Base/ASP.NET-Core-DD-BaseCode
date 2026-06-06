@@ -13,24 +13,23 @@ public class ModuleGeneratorService : IModuleGeneratorService
         _srcPath = Path.Combine(_solutionRoot, "src");
     }
 
-    // =========================
-    // ENTRY POINT
-    // =========================
+    // ========================= ENTRY =========================
     public Task GenerateModuleAsync(string moduleName)
     {
         var name = Capitalize(moduleName);
 
-        GenerateDomain(_srcPath, name);
-        GenerateApplication(_srcPath, name);
-        GenerateInfrastructure(_srcPath, name);
-        GenerateWeb(_srcPath, name);
+        GenerateDomain(name);
+        GenerateApplication(name);
+        GenerateInfrastructure(name);
+        GenerateWeb(name);
+
+        UpdateMappingProfile(name);
+        UpdateDbContext(name);
 
         return Task.CompletedTask;
     }
 
-    // =========================
-    // SOLUTION ROOT FIX
-    // =========================
+    // ========================= SOLUTION ROOT =========================
     private string GetSolutionRoot()
     {
         var dir = AppContext.BaseDirectory;
@@ -43,30 +42,26 @@ public class ModuleGeneratorService : IModuleGeneratorService
             dir = Directory.GetParent(dir)?.FullName;
         }
 
-        throw new Exception("Could not find solution root (UserApp.sln)");
+        throw new Exception("Solution root not found");
     }
 
-    // =========================
-    // DOMAIN
-    // =========================
-    private void GenerateDomain(string src, string name)
+    // ========================= DOMAIN =========================
+    private void GenerateDomain(string name)
     {
-        var path = Path.Combine(src, "UserApp.Domain", $"{name}s");
+        var path = Path.Combine(_srcPath, $"UserApp.Domain/{name}s");
         Directory.CreateDirectory(path);
 
-        File.WriteAllText(
-            Path.Combine(path, $"{name}.cs"),
+        File.WriteAllText(Path.Combine(path, $"{name}.cs"),
 $@"using UserApp.Domain.Common;
 
 namespace UserApp.Domain.{name}s;
 
 public class {name} : Entity<Guid>
 {{
-    public Guid Id {{ get; set; }}
+    public string Name {{ get; set; }} = string.Empty;
 }}");
 
-        File.WriteAllText(
-            Path.Combine(path, $"I{name}Repository.cs"),
+        File.WriteAllText(Path.Combine(path, $"I{name}Repository.cs"),
 $@"using UserApp.Domain.Common;
 
 namespace UserApp.Domain.{name}s;
@@ -76,21 +71,20 @@ public interface I{name}Repository : IBaseRepository<{name}>
 }}");
     }
 
-    // =========================
-    // APPLICATION
-    // =========================
-    private void GenerateApplication(string src, string name)
+    // ========================= APPLICATION (FIXED HERE) =========================
+    private void GenerateApplication(string name)
     {
-        var path = Path.Combine(src, "UserApp.Application", $"{name}s");
-        var interfacePath = Path.Combine(path, "Interfaces");
+        var path = Path.Combine(_srcPath, $"UserApp.Application/{name}s");
+        var interfaces = Path.Combine(path, "Interfaces");
 
         Directory.CreateDirectory(path);
-        Directory.CreateDirectory(interfacePath);
+        Directory.CreateDirectory(interfaces);
 
-        File.WriteAllText(
-            Path.Combine(path, $"{name}Service.cs"),
+        // SERVICE
+        File.WriteAllText(Path.Combine(path, $"{name}Service.cs"),
 $@"using UserApp.Domain.{name}s;
 using UserApp.Application.Common;
+using UserApp.Application.{name}s.Interfaces;
 
 namespace UserApp.Application.{name}s;
 
@@ -101,10 +95,10 @@ public class {name}Service : BaseService<{name}>, I{name}Service
     }}
 }}");
 
-        File.WriteAllText(
-            Path.Combine(interfacePath, $"I{name}Service.cs"),
-$@"using UserApp.Domain.{name}s;
-using UserApp.Application.Common;
+        // INTERFACE (🔥 FIXED: Domain added)
+        File.WriteAllText(Path.Combine(interfaces, $"I{name}Service.cs"),
+$@"using UserApp.Application.Common;
+using UserApp.Domain.{name}s;
 
 namespace UserApp.Application.{name}s.Interfaces;
 
@@ -113,16 +107,13 @@ public interface I{name}Service : IBaseService<{name}>
 }}");
     }
 
-    // =========================
-    // INFRASTRUCTURE
-    // =========================
-    private void GenerateInfrastructure(string src, string name)
+    // ========================= INFRASTRUCTURE =========================
+    private void GenerateInfrastructure(string name)
     {
-        var path = Path.Combine(src, "UserApp.Infrastructure", "Persistence", "Repositories");
+        var path = Path.Combine(_srcPath, "UserApp.Infrastructure/Persistence/Repositories");
         Directory.CreateDirectory(path);
 
-        File.WriteAllText(
-            Path.Combine(path, $"{name}Repository.cs"),
+        File.WriteAllText(Path.Combine(path, $"{name}Repository.cs"),
 $@"using UserApp.Domain.{name}s;
 using UserApp.Infrastructure.Persistence;
 
@@ -136,19 +127,19 @@ public class {name}Repository : BaseRepository<{name}>, I{name}Repository
 }}");
     }
 
-    // =========================
-    // WEB
-    // =========================
-    private void GenerateWeb(string src, string name)
+    // ========================= WEB =========================
+    private void GenerateWeb(string name)
     {
-        var controllerPath = Path.Combine(src, "UserApp.Web", "Controllers");
-        var vmPath = Path.Combine(src, "UserApp.Web", "ViewModels", $"{name}s");
+        var mvc = Path.Combine(_srcPath, "UserApp.Web/Controllers");
+        var api = Path.Combine(_srcPath, "UserApp.Web/Controllers/Api");
+        var vm = Path.Combine(_srcPath, $"UserApp.Web/ViewModels/{name}s");
 
-        Directory.CreateDirectory(controllerPath);
-        Directory.CreateDirectory(vmPath);
+        Directory.CreateDirectory(mvc);
+        Directory.CreateDirectory(api);
+        Directory.CreateDirectory(vm);
 
-        File.WriteAllText(
-            Path.Combine(controllerPath, $"{name}Controller.cs"),
+        // MVC
+        File.WriteAllText(Path.Combine(mvc, $"{name}Controller.cs"),
 $@"using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using UserApp.Application.{name}s.Interfaces;
@@ -157,31 +148,106 @@ using UserApp.Web.ViewModels.{name}s;
 
 namespace UserApp.Web.Controllers;
 
-public class {name}Controller : Controller
+public class {name}Controller : BaseController<{name}, {name}ViewModel>
 {{
-    private readonly I{name}Service _service;
-    private readonly IMapper _mapper;
-
     public {name}Controller(I{name}Service service, IMapper mapper)
+        : base(service, mapper)
     {{
-        _service = service;
-        _mapper = mapper;
     }}
 }}");
 
-        File.WriteAllText(
-            Path.Combine(vmPath, $"{name}ViewModel.cs"),
+        // API
+        File.WriteAllText(Path.Combine(api, $"{name}ApiController.cs"),
+$@"using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using UserApp.Application.{name}s.Interfaces;
+using UserApp.Domain.{name}s;
+using UserApp.Web.ViewModels.{name}s;
+
+namespace UserApp.Web.Controllers.Api;
+
+[ApiController]
+[Route(""api/[controller]"")]
+[Authorize]
+public class {name}ApiController : BaseApiController<{name}, {name}ViewModel>
+{{
+    public {name}ApiController(I{name}Service service, IMapper mapper)
+        : base(service, mapper)
+    {{
+    }}
+}}");
+
+        // ViewModel
+        File.WriteAllText(Path.Combine(vm, $"{name}ViewModel.cs"),
 $@"namespace UserApp.Web.ViewModels.{name}s;
 
 public class {name}ViewModel
 {{
     public Guid Id {{ get; set; }}
+    public string Name {{ get; set; }} = string.Empty;
 }}");
     }
 
-    // =========================
-    // HELPERS
-    // =========================
+    // ========================= MAPPING =========================
+    private void UpdateMappingProfile(string name)
+    {
+        var file = Path.Combine(_srcPath, "UserApp.Web/Mapping/MappingProfile.cs");
+
+        EnsureUsing(file, $"using UserApp.Domain.{name}s;");
+        EnsureUsing(file, $"using UserApp.Web.ViewModels.{name}s;");
+
+        var inject =
+$@"
+        CreateMap<{name}, {name}ViewModel>();
+        CreateMap<{name}ViewModel, {name}>();
+";
+
+        CodeInjector.InjectBetween(
+            file,
+            "// <AUTO-MAPPINGS-START>",
+            "// <AUTO-MAPPINGS-END>",
+            inject
+        );
+    }
+
+    // ========================= DB CONTEXT =========================
+    private void UpdateDbContext(string name)
+    {
+        var file = Path.Combine(_srcPath, "UserApp.Infrastructure/Persistence/AppDbContext.cs");
+
+        EnsureUsing(file, $"using UserApp.Domain.{name}s;");
+
+        var inject =
+$@"
+    public DbSet<{name}> {name}s => Set<{name}>();
+";
+
+        CodeInjector.InjectBetween(
+            file,
+            "// <AUTO-DBSETS-START>",
+            "// <AUTO-DBSETS-END>",
+            inject
+        );
+    }
+
+    // ========================= USING HELPER =========================
+    private void EnsureUsing(string filePath, string usingLine)
+    {
+        var lines = File.ReadAllLines(filePath).ToList();
+
+        if (lines.Any(x => x.Trim() == usingLine))
+            return;
+
+        var lastUsing = lines.FindLastIndex(x => x.Trim().StartsWith("using"));
+
+        if (lastUsing == -1)
+            throw new Exception("No using found");
+
+        lines.Insert(lastUsing + 1, usingLine);
+        File.WriteAllLines(filePath, lines);
+    }
+
     private string Capitalize(string input)
         => char.ToUpper(input[0]) + input.Substring(1);
 }
