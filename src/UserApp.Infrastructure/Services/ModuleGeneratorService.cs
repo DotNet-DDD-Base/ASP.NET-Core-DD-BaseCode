@@ -26,6 +26,9 @@ public class ModuleGeneratorService : IModuleGeneratorService
         UpdateMappingProfile(name);
         UpdateDbContext(name);
 
+
+        UpdateProgramCs(name);
+
         return Task.CompletedTask;
     }
 
@@ -208,6 +211,41 @@ public class ModuleGeneratorService : IModuleGeneratorService
             "// <AUTO-MAPPINGS-START>",
             "// <AUTO-MAPPINGS-END>",
             inject
+        );
+    }
+
+    private void UpdateProgramCs(string name)
+    {
+        var file = Path.Combine(_srcPath, "UserApp.Web/Program.cs");
+
+        // Repository using
+        EnsureUsing(file, $"using UserApp.Domain.{name}s;");
+        EnsureUsing(file, $"using UserApp.Infrastructure.Persistence.Repositories;");
+
+        // Service using
+        EnsureUsing(file, $"using UserApp.Application.{name}s;");
+        EnsureUsing(file, $"using UserApp.Application.{name}s.Interfaces;");
+
+        // Repository registration
+        var repoInject =
+    $@"builder.Services.AddScoped<I{name}Repository, {name}Repository>();";
+
+        CodeInjector.InjectBetween(
+            file,
+            "// <AUTO-REPOSITORIES-START>",
+            "// <AUTO-REPOSITORIES-END>",
+            repoInject
+        );
+
+        // Service registration
+        var serviceInject =
+    $@"builder.Services.AddScoped<I{name}Service, {name}Service>();";
+
+        CodeInjector.InjectBetween(
+            file,
+            "// <AUTO-SERVICES-START>",
+            "// <AUTO-SERVICES-END>",
+            serviceInject
         );
     }
 

@@ -45,6 +45,9 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 // ------------------------------------------------
 builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
 
+// <AUTO-REPOSITORIES-START>
+// <AUTO-REPOSITORIES-END>
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 
@@ -52,6 +55,9 @@ builder.Services.AddScoped<IProductRepository, ProductRepository>();
 // SERVICES (Application Layer)
 // ------------------------------------------------
 builder.Services.AddScoped(typeof(IBaseService<>), typeof(BaseService<>));
+
+// <AUTO-SERVICES-START>
+// <AUTO-SERVICES-END>
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IProductService, ProductService>();
