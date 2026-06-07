@@ -9,6 +9,16 @@
         <input asp-for="ModuleName" class="form-control" />
     </div>
 
+    <div class="form-check mb-3">
+        <input asp-for="RunMigration" class="form-check-input" />
+        <label asp-for="RunMigration" class="form-check-label">Run Migration</label>
+    </div>
+
+    <div class="form-check mb-3">
+        <input asp-for="RunDbUpdate" class="form-check-input" />
+        <label asp-for="RunDbUpdate" class="form-check-label">Run Database Update</label>
+    </div>
+
     <hr />
 
     <h4>Fields Designer</h4>

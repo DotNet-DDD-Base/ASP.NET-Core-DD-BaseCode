@@ -15,13 +15,24 @@ public class ModuleGeneratorService : IModuleGeneratorService
         _srcPath = Path.Combine(_solutionRoot, "src");
     }
 
+    private string InfraProject =>
+    Path.Combine(_solutionRoot, "src/UserApp.Infrastructure/UserApp.Infrastructure.csproj");
+
+    private string WebProject =>
+        Path.Combine(_solutionRoot, "src/UserApp.Web/UserApp.Web.csproj");
+
     // ========================= ENTRY =========================
-    public Task GenerateModuleAsync(string moduleName, List<ModuleFieldDto> fields)
+    public Task GenerateModuleAsync(
+        string moduleName,
+        List<ModuleFieldDto> fields,
+        bool runMigration,
+        bool runDbUpdate
+    )
     {
         var name = Capitalize(moduleName);
 
         GenerateDomain(name, fields);
-        GenerateDomainRepository(name); // ✅ FIX: ADD THIS
+        GenerateDomainRepository(name);
         GenerateApplication(name);
         GenerateInfrastructure(name);
         GenerateWeb(name);
@@ -29,6 +40,24 @@ public class ModuleGeneratorService : IModuleGeneratorService
         UpdateMappingProfile(name);
         UpdateDbContext(name);
         UpdateProgramCs(name);
+
+        // EF MIGRATION
+        if (runMigration)
+        {
+            RunCommand("dotnet",
+                $"ef migrations add {name}_{DateTime.Now:yyyyMMddHHmmss} " +
+                $"--project {InfraProject} " +
+                $"--startup-project {WebProject}");
+        }
+
+        // DB UPDATE
+        if (runDbUpdate)
+        {
+            RunCommand("dotnet",
+                $"ef database update " +
+                $"--project {InfraProject} " +
+                $"--startup-project {WebProject}");
+        }
 
         return Task.CompletedTask;
     }
@@ -288,6 +317,46 @@ CreateMap<{name}ViewModel, {name}>();
 ");
     }
 
+    private void RunCommand(string fileName, string arguments)
+    {
+        var process = new System.Diagnostics.Process
+        {
+            StartInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WorkingDirectory = _solutionRoot
+            }
+        };
+
+        process.Start();
+
+        var output = process.StandardOutput.ReadToEnd();
+        var error = process.StandardError.ReadToEnd();
+
+        process.WaitForExit();
+
+        if (process.ExitCode != 0)
+        {
+            throw new Exception($"""
+EF COMMAND FAILED:
+
+{fileName} {arguments}
+
+ERROR:
+{error}
+
+OUTPUT:
+{output}
+""");
+        }
+
+        Console.WriteLine(output);
+    }
     // ========================= HELPER =========================
     private void EnsureUsing(string filePath, string usingLine)
     {

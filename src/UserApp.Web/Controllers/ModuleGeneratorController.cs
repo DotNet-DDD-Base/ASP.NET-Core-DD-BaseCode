@@ -44,7 +44,12 @@ public class ModuleGeneratorController : Controller
                 IsNullable = x.IsNullable
             }).ToList();
 
-        await _service.GenerateModuleAsync(moduleName, fields);
+        await _service.GenerateModuleAsync(
+    moduleName,
+    fields,
+    vm.RunMigration,
+    vm.RunDbUpdate
+);
 
         TempData["Success"] = $"{moduleName} module generated successfully!";
         return RedirectToAction(nameof(Index));
