@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using UserApp.Application.Common.Interfaces;
 using UserApp.Web.ViewModels.ModuleGenerator;
+using UserApp.Application.Common.DTOs;
 
 namespace UserApp.Web.Controllers;
 
@@ -34,16 +35,18 @@ public class ModuleGeneratorController : Controller
 
         var moduleName = vm.ModuleName?.Trim();
 
-        if (string.IsNullOrWhiteSpace(moduleName))
-        {
-            ModelState.AddModelError(nameof(vm.ModuleName), "Module name is required.");
-            return View(vm);
-        }
+        var fields = vm.Fields
+            .Select(x => new ModuleFieldDto
+            {
+                Name = x.Name,
+                Type = x.Type,
+                Length = x.Length,
+                IsNullable = x.IsNullable
+            }).ToList();
 
-        await _service.GenerateModuleAsync(moduleName);
+        await _service.GenerateModuleAsync(moduleName, fields);
 
         TempData["Success"] = $"{moduleName} module generated successfully!";
-
         return RedirectToAction(nameof(Index));
     }
 }

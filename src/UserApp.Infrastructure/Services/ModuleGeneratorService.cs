@@ -1,4 +1,6 @@
 using UserApp.Application.Common.Interfaces;
+using UserApp.Application.Common.DTOs;
+using System.Text;
 
 namespace UserApp.Infrastructure.Services;
 
@@ -14,19 +16,18 @@ public class ModuleGeneratorService : IModuleGeneratorService
     }
 
     // ========================= ENTRY =========================
-    public Task GenerateModuleAsync(string moduleName)
+    public Task GenerateModuleAsync(string moduleName, List<ModuleFieldDto> fields)
     {
         var name = Capitalize(moduleName);
 
-        GenerateDomain(name);
+        GenerateDomain(name, fields);
+        GenerateDomainRepository(name); // ✅ FIX: ADD THIS
         GenerateApplication(name);
         GenerateInfrastructure(name);
         GenerateWeb(name);
 
         UpdateMappingProfile(name);
         UpdateDbContext(name);
-
-
         UpdateProgramCs(name);
 
         return Task.CompletedTask;
@@ -48,33 +49,72 @@ public class ModuleGeneratorService : IModuleGeneratorService
         throw new Exception("Solution root not found");
     }
 
-    // ========================= DOMAIN =========================
-    private void GenerateDomain(string name)
+    // ========================= DOMAIN ENTITY =========================
+    private void GenerateDomain(string name, List<ModuleFieldDto> fields)
     {
         var path = Path.Combine(_srcPath, $"UserApp.Domain/{name}s");
         Directory.CreateDirectory(path);
 
-        File.WriteAllText(Path.Combine(path, $"{name}.cs"),
-        $@"using UserApp.Domain.Common;
+        var props = new StringBuilder();
 
-        namespace UserApp.Domain.{name}s;
+        foreach (var f in fields)
+        {
+            // ❌ NEVER generate Id (already in Entity<Guid>)
+            if (f.Name.Equals("Id", StringComparison.OrdinalIgnoreCase))
+                continue;
 
-        public class {name} : Entity<Guid>
-        {{
-            public string Name {{ get; set; }} = string.Empty;
-        }}");
+            var nullable = f.IsNullable && f.Type != "string" ? "?" : "";
 
-        File.WriteAllText(Path.Combine(path, $"I{name}Repository.cs"),
-        $@"using UserApp.Domain.Common;
+            if (f.Type == "string")
+            {
+                props.AppendLine($@"
+    public string {f.Name} {{ get; set; }} = string.Empty;
+");
+            }
+            else
+            {
+                props.AppendLine($@"
+    public {f.Type}{nullable} {f.Name} {{ get; set; }}
+");
+            }
+        }
 
-        namespace UserApp.Domain.{name}s;
+        var entity = $@"
+using UserApp.Domain.Common;
 
-        public interface I{name}Repository : IBaseRepository<{name}>
-        {{
-        }}");
+namespace UserApp.Domain.{name}s;
+
+public class {name} : Entity<Guid>
+{{
+{props}
+}}
+";
+
+        File.WriteAllText(Path.Combine(path, $"{name}.cs"), entity);
     }
 
-    // ========================= APPLICATION (FIXED HERE) =========================
+    // ========================= DOMAIN REPOSITORY (IMPORTANT FIX) =========================
+    private void GenerateDomainRepository(string name)
+    {
+        var path = Path.Combine(_srcPath, $"UserApp.Domain/{name}s");
+        Directory.CreateDirectory(path);
+
+        var file = Path.Combine(path, $"I{name}Repository.cs");
+
+        var content = $@"
+using UserApp.Domain.Common;
+
+namespace UserApp.Domain.{name}s;
+
+public interface I{name}Repository : IBaseRepository<{name}>
+{{
+}}
+";
+
+        File.WriteAllText(file, content);
+    }
+
+    // ========================= APPLICATION =========================
     private void GenerateApplication(string name)
     {
         var path = Path.Combine(_srcPath, $"UserApp.Application/{name}s");
@@ -83,31 +123,31 @@ public class ModuleGeneratorService : IModuleGeneratorService
         Directory.CreateDirectory(path);
         Directory.CreateDirectory(interfaces);
 
-        // SERVICE
         File.WriteAllText(Path.Combine(path, $"{name}Service.cs"),
-        $@"using UserApp.Domain.{name}s;
-        using UserApp.Application.Common;
-        using UserApp.Application.{name}s.Interfaces;
+        $@"
+using UserApp.Domain.{name}s;
+using UserApp.Application.Common;
+using UserApp.Application.{name}s.Interfaces;
 
-        namespace UserApp.Application.{name}s;
+namespace UserApp.Application.{name}s;
 
-        public class {name}Service : BaseService<{name}>, I{name}Service
-        {{
-            public {name}Service(I{name}Repository repo) : base(repo)
-            {{
-            }}
-        }}");
+public class {name}Service : BaseService<{name}>, I{name}Service
+{{
+    public {name}Service(I{name}Repository repo) : base(repo)
+    {{
+    }}
+}}");
 
-        // INTERFACE (🔥 FIXED: Domain added)
         File.WriteAllText(Path.Combine(interfaces, $"I{name}Service.cs"),
-        $@"using UserApp.Application.Common;
-        using UserApp.Domain.{name}s;
+        $@"
+using UserApp.Application.Common;
+using UserApp.Domain.{name}s;
 
-        namespace UserApp.Application.{name}s.Interfaces;
+namespace UserApp.Application.{name}s.Interfaces;
 
-        public interface I{name}Service : IBaseService<{name}>
-        {{
-        }}");
+public interface I{name}Service : IBaseService<{name}>
+{{
+}}");
     }
 
     // ========================= INFRASTRUCTURE =========================
@@ -117,17 +157,18 @@ public class ModuleGeneratorService : IModuleGeneratorService
         Directory.CreateDirectory(path);
 
         File.WriteAllText(Path.Combine(path, $"{name}Repository.cs"),
-        $@"using UserApp.Domain.{name}s;
-        using UserApp.Infrastructure.Persistence;
+        $@"
+using UserApp.Domain.{name}s;
+using UserApp.Infrastructure.Persistence;
 
-        namespace UserApp.Infrastructure.Persistence.Repositories;
+namespace UserApp.Infrastructure.Persistence.Repositories;
 
-        public class {name}Repository : BaseRepository<{name}>, I{name}Repository
-        {{
-            public {name}Repository(AppDbContext db) : base(db)
-            {{
-            }}
-        }}");
+public class {name}Repository : BaseRepository<{name}>, I{name}Repository
+{{
+    public {name}Repository(AppDbContext db) : base(db)
+    {{
+    }}
+}}");
     }
 
     // ========================= WEB =========================
@@ -141,55 +182,93 @@ public class ModuleGeneratorService : IModuleGeneratorService
         Directory.CreateDirectory(api);
         Directory.CreateDirectory(vm);
 
-        // MVC
         File.WriteAllText(Path.Combine(mvc, $"{name}Controller.cs"),
-        $@"using AutoMapper;
-        using Microsoft.AspNetCore.Mvc;
-        using UserApp.Application.{name}s.Interfaces;
-        using UserApp.Domain.{name}s;
-        using UserApp.Web.ViewModels.{name}s;
+        $@"
+using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using UserApp.Application.{name}s.Interfaces;
+using UserApp.Domain.{name}s;
+using UserApp.Web.ViewModels.{name}s;
 
-        namespace UserApp.Web.Controllers;
+namespace UserApp.Web.Controllers;
 
-        public class {name}Controller : BaseController<{name}, {name}ViewModel>
-        {{
-            public {name}Controller(I{name}Service service, IMapper mapper)
-                : base(service, mapper)
-            {{
-            }}
-        }}");
+public class {name}Controller : BaseController<{name}, {name}ViewModel>
+{{
+    public {name}Controller(I{name}Service service, IMapper mapper)
+        : base(service, mapper)
+    {{
+    }}
+}}");
 
-        // API
         File.WriteAllText(Path.Combine(api, $"{name}ApiController.cs"),
-        $@"using AutoMapper;
-        using Microsoft.AspNetCore.Authorization;
-        using Microsoft.AspNetCore.Mvc;
-        using UserApp.Application.{name}s.Interfaces;
-        using UserApp.Domain.{name}s;
-        using UserApp.Web.ViewModels.{name}s;
+        $@"
+using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using UserApp.Application.{name}s.Interfaces;
+using UserApp.Domain.{name}s;
+using UserApp.Web.ViewModels.{name}s;
 
-        namespace UserApp.Web.Controllers.Api;
+namespace UserApp.Web.Controllers.Api;
 
-        [ApiController]
-        [Route(""api/[controller]"")]
-        [Authorize]
-        public class {name}ApiController : BaseApiController<{name}, {name}ViewModel>
-        {{
-            public {name}ApiController(I{name}Service service, IMapper mapper)
-                : base(service, mapper)
-            {{
-            }}
-        }}");
+[ApiController]
+[Route(""api/[controller]"")]
+[Authorize]
+public class {name}ApiController : BaseApiController<{name}, {name}ViewModel>
+{{
+    public {name}ApiController(I{name}Service service, IMapper mapper)
+        : base(service, mapper)
+    {{
+    }}
+}}");
 
-        // ViewModel
         File.WriteAllText(Path.Combine(vm, $"{name}ViewModel.cs"),
-        $@"namespace UserApp.Web.ViewModels.{name}s;
+        $@"
+namespace UserApp.Web.ViewModels.{name}s;
 
-        public class {name}ViewModel
-        {{
-            public Guid Id {{ get; set; }}
-            public string Name {{ get; set; }} = string.Empty;
-        }}");
+public class {name}ViewModel
+{{
+    public Guid Id {{ get; set; }}
+    public string Name {{ get; set; }} = string.Empty;
+}}");
+    }
+
+    // ========================= DB CONTEXT =========================
+    private void UpdateDbContext(string name)
+    {
+        var file = Path.Combine(_srcPath, "UserApp.Infrastructure/Persistence/AppDbContext.cs");
+
+        EnsureUsing(file, $"using UserApp.Domain.{name}s;");
+
+        var inject = $@"
+public DbSet<{name}> {name}s => Set<{name}>();
+";
+
+        CodeInjector.InjectBetween(file,
+            "// <AUTO-DBSETS-START>",
+            "// <AUTO-DBSETS-END>",
+            inject);
+    }
+
+    // ========================= PROGRAM CS =========================
+    private void UpdateProgramCs(string name)
+    {
+        var file = Path.Combine(_srcPath, "UserApp.Web/Program.cs");
+
+        EnsureUsing(file, $"using UserApp.Domain.{name}s;");
+        EnsureUsing(file, $"using UserApp.Application.{name}s;");
+        EnsureUsing(file, $"using UserApp.Application.{name}s.Interfaces;");
+        EnsureUsing(file, $"using UserApp.Infrastructure.Persistence.Repositories;");
+
+        CodeInjector.InjectBetween(file,
+            "// <AUTO-REPOSITORIES-START>",
+            "// <AUTO-REPOSITORIES-END>",
+            $@"builder.Services.AddScoped<I{name}Repository, {name}Repository>();");
+
+        CodeInjector.InjectBetween(file,
+            "// <AUTO-SERVICES-START>",
+            "// <AUTO-SERVICES-END>",
+            $@"builder.Services.AddScoped<I{name}Service, {name}Service>();");
     }
 
     // ========================= MAPPING =========================
@@ -200,76 +279,16 @@ public class ModuleGeneratorService : IModuleGeneratorService
         EnsureUsing(file, $"using UserApp.Domain.{name}s;");
         EnsureUsing(file, $"using UserApp.Web.ViewModels.{name}s;");
 
-        var inject =
-        $@"
-        CreateMap<{name}, {name}ViewModel>();
-        CreateMap<{name}ViewModel, {name}>();
-        ";
-
-        CodeInjector.InjectBetween(
-            file,
+        CodeInjector.InjectBetween(file,
             "// <AUTO-MAPPINGS-START>",
             "// <AUTO-MAPPINGS-END>",
-            inject
-        );
+            $@"
+CreateMap<{name}, {name}ViewModel>();
+CreateMap<{name}ViewModel, {name}>();
+");
     }
 
-    private void UpdateProgramCs(string name)
-    {
-        var file = Path.Combine(_srcPath, "UserApp.Web/Program.cs");
-
-        // Repository using
-        EnsureUsing(file, $"using UserApp.Domain.{name}s;");
-        EnsureUsing(file, $"using UserApp.Infrastructure.Persistence.Repositories;");
-
-        // Service using
-        EnsureUsing(file, $"using UserApp.Application.{name}s;");
-        EnsureUsing(file, $"using UserApp.Application.{name}s.Interfaces;");
-
-        // Repository registration
-        var repoInject =
-    $@"builder.Services.AddScoped<I{name}Repository, {name}Repository>();";
-
-        CodeInjector.InjectBetween(
-            file,
-            "// <AUTO-REPOSITORIES-START>",
-            "// <AUTO-REPOSITORIES-END>",
-            repoInject
-        );
-
-        // Service registration
-        var serviceInject =
-    $@"builder.Services.AddScoped<I{name}Service, {name}Service>();";
-
-        CodeInjector.InjectBetween(
-            file,
-            "// <AUTO-SERVICES-START>",
-            "// <AUTO-SERVICES-END>",
-            serviceInject
-        );
-    }
-
-    // ========================= DB CONTEXT =========================
-    private void UpdateDbContext(string name)
-    {
-        var file = Path.Combine(_srcPath, "UserApp.Infrastructure/Persistence/AppDbContext.cs");
-
-        EnsureUsing(file, $"using UserApp.Domain.{name}s;");
-
-        var inject =
-        $@"
-            public DbSet<{name}> {name}s => Set<{name}>();
-        ";
-
-        CodeInjector.InjectBetween(
-            file,
-            "// <AUTO-DBSETS-START>",
-            "// <AUTO-DBSETS-END>",
-            inject
-        );
-    }
-
-    // ========================= USING HELPER =========================
+    // ========================= HELPER =========================
     private void EnsureUsing(string filePath, string usingLine)
     {
         var lines = File.ReadAllLines(filePath).ToList();

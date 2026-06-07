@@ -1,29 +1,82 @@
 @model UserApp.Web.ViewModels.ModuleGenerator.GenerateModuleViewModel
 
-<h2>Generate Module</h2>
+<h2>Module Designer</h2>
 
 <form method="post">
 
     <div class="mb-3">
         <label>Module Name</label>
-
-        <input asp-for="ModuleName"
-               class="form-control" />
-
-        <span asp-validation-for="ModuleName"
-              class="text-danger"></span>
+        <input asp-for="ModuleName" class="form-control" />
     </div>
 
-    <button type="submit"
-            class="btn btn-primary">
-        Generate
+    <hr />
+
+    <h4>Fields Designer</h4>
+
+    <table class="table" id="fieldsTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Length</th>
+                <th>Nullable</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody></tbody>
+    </table>
+
+    <button type="button" class="btn btn-success" onclick="addField()">
+        + Add Field
     </button>
 
+    <br /><br />
+
+    <button type="submit" class="btn btn-primary">
+        Generate Module
+    </button>
 </form>
 
-@if (ViewBag.Success != null)
-{
-    <div class="alert alert-success mt-3">
-        @ViewBag.Success
-    </div>
+<script>
+let index = 0;
+
+function addField() {
+    const tbody = document.querySelector("#fieldsTable tbody");
+
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+        <td>
+            <input name="Fields[${index}].Name" class="form-control" />
+        </td>
+
+        <td>
+            <select name="Fields[${index}].Type" class="form-control">
+                <option value="string">string</option>
+                <option value="int">int</option>
+                <option value="decimal">decimal</option>
+                <option value="bool">bool</option>
+                <option value="DateTime">DateTime</option>
+            </select>
+        </td>
+
+        <td>
+            <input name="Fields[${index}].Length" type="number" class="form-control" />
+        </td>
+
+        <td>
+            <input type="checkbox" name="Fields[${index}].IsNullable" />
+        </td>
+
+        <td>
+            <button type="button" onclick="this.closest('tr').remove()" class="btn btn-danger btn-sm">
+                X
+            </button>
+        </td>
+    `;
+
+    tbody.appendChild(row);
+    index++;
 }
+</script>
