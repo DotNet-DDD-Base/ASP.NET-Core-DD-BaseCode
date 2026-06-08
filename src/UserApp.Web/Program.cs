@@ -19,6 +19,12 @@ using UserApp.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using UserApp.Domain.Funs;
+using UserApp.Application.Funs;
+using UserApp.Application.Funs.Interfaces;
+using UserApp.Domain.Tables;
+using UserApp.Application.Tables;
+using UserApp.Application.Tables.Interfaces;
 
 // ================= AUTO MODULE IMPORTS =================
 // <AUTO-USINGS-START>
@@ -49,6 +55,8 @@ builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
 
 // ================= AUTO REPOSITORIES =================
 // <AUTO-REPOSITORIES-START>
+builder.Services.AddScoped<IFunRepository, FunRepository>();
+builder.Services.AddScoped<ITableRepository, TableRepository>();
 // <AUTO-REPOSITORIES-END>
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -61,6 +69,8 @@ builder.Services.AddScoped(typeof(IBaseService<>), typeof(BaseService<>));
 
 // ================= AUTO SERVICES =================
 // <AUTO-SERVICES-START>
+builder.Services.AddScoped<IFunService, FunService>();
+builder.Services.AddScoped<ITableService, TableService>();
 // <AUTO-SERVICES-END>
 
 builder.Services.AddScoped<IUserService, UserService>();

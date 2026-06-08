@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using UserApp.Domain.Users;
 using UserApp.Domain.Products;
 using UserApp.Infrastructure.Persistence.Configurations;
+using UserApp.Domain.Funs;
+using UserApp.Domain.Tables;
 
 
 
@@ -21,6 +23,8 @@ public class AppDbContext : DbContext
 
     // ================= AUTO DBSets =================
     // <AUTO-DBSETS-START>
+public DbSet<Fun> Funs => Set<Fun>();
+public DbSet<Table> Tables => Set<Table>();
     // <AUTO-DBSETS-END>
 
 

@@ -3,6 +3,8 @@ using UserApp.Domain.Users;
 using UserApp.Domain.Products;
 using UserApp.Web.ViewModels;
 using UserApp.Application.Users.DTOs;
+using UserApp.Domain.Funs;
+using UserApp.Domain.Tables;
 
 
 namespace UserApp.Web.Mapping;
@@ -34,6 +36,10 @@ public class MappingProfile : Profile
 
 
 
+CreateMap<Fun, FunViewModel>();
+CreateMap<FunViewModel, Fun>();
+CreateMap<Table, TableViewModel>();
+CreateMap<TableViewModel, Table>();
         // <AUTO-MAPPINGS-END>
 
     }
