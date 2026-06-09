@@ -39,4 +39,12 @@ public class MediaRepository : IMediaRepository
     {
         await _db.SaveChangesAsync();
     }
+
+    public async Task<MediaFile?> GetLatestByEntityAsync(string entityName, Guid entityId)
+    {
+        return await _db.Media
+            .Where(x => x.EntityName == entityName && x.EntityId == entityId)
+            .OrderByDescending(x => x.Id)
+            .FirstOrDefaultAsync();
+    }
 }

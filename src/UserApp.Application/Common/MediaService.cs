@@ -54,4 +54,10 @@ public class MediaService : IMediaService
         _repo.Remove(media);
         await _repo.SaveChangesAsync();
     }
+
+    public async Task<string?> GetLatestUrlAsync(string entityName, Guid entityId)
+    {
+        var media = await _repo.GetLatestByEntityAsync(entityName, entityId);
+        return media?.Url;
+    }
 }

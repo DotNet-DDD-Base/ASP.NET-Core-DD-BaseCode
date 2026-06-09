@@ -13,4 +13,7 @@ public interface IMediaRepository
     void Remove(MediaFile entity);
 
     Task SaveChangesAsync();
+
+    Task<MediaFile?> GetLatestByEntityAsync(string entityName, Guid entityId);
+
 }

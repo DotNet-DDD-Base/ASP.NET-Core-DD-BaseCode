@@ -20,8 +20,22 @@
         <input asp-for="Price" class="form-control" />
     </div>
 
-    <!-- IMAGE -->
-    <input type="file" name="file" />
+    <!-- CURRENT IMAGE PREVIEW -->
+    @if (!string.IsNullOrEmpty(Model.ImageUrl))
+{
+    <div class="mb-3">
+        <label>Current Image</label>
+        <br />
+        <img src="@Model.ImageUrl"
+             width="120"
+             style="border:1px solid #ddd; padding:5px;" />
+    </div>
+}
+    <!-- NEW IMAGE UPLOAD -->
+    <div class="mb-3">
+        <label>Change Image</label>
+        <input type="file" name="file" class="form-control" />
+    </div>
 
     <button type="submit" class="btn btn-primary">Update</button>
 </form>

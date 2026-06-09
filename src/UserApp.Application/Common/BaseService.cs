@@ -46,12 +46,15 @@ public class BaseService<T> : IBaseService<T> where T : class
             throw new ArgumentNullException(nameof(entity));
 
         _repo.Update(entity);
-        await _repo.SaveChangesAsync();
 
+        // 🔥 HANDLE MEDIA FIRST (track changes in same context)
         if (_mediaPipeline != null && file != null)
         {
             await _mediaPipeline.HandleUpdateAsync(typeof(T).Name, entity, file);
         }
+
+        // 🔥 SAVE EVERYTHING TOGETHER
+        await _repo.SaveChangesAsync();
     }
 
     public async Task RemoveAsync(T entity)

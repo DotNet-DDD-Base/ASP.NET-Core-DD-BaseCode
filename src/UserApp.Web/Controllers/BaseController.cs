@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using UserApp.Application.Common;
+using UserApp.Application.Common.Interfaces;
 using UserApp.Web.ViewModels;
 
 namespace UserApp.Web.Controllers;
@@ -9,17 +10,23 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
     where TEntity : class
     where TViewModel : class
 {
-    private readonly IBaseService<TEntity> _service;
-    private readonly IMapper _mapper;
+    protected readonly IBaseService<TEntity> _service;
+    protected readonly IMapper _mapper;
+    protected readonly IMediaService? _mediaService;
 
-    protected BaseController(IBaseService<TEntity> service, IMapper mapper)
+
+    protected BaseController(
+        IBaseService<TEntity> service,
+        IMapper mapper,
+        IMediaService? mediaService = null)
     {
         _service = service;
         _mapper = mapper;
+        _mediaService = mediaService;
     }
 
     // -------------------------
-    // INDEX (PAGINATED LIST)
+    // INDEX
     // -------------------------
     public async Task<IActionResult> Index(int page = 1, int size = 10)
     {
@@ -28,17 +35,33 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
 
         var items = _mapper.Map<List<TViewModel>>(data);
 
-        var vm = new ListViewModel<TViewModel>
+        if (_mediaService != null)
+        {
+            foreach (var item in items)
+            {
+                var idProp = item.GetType().GetProperty("Id");
+                var imgProp = item.GetType().GetProperty("ImageUrl");
+
+                if (idProp == null || imgProp == null) continue;
+
+                var id = (Guid)idProp.GetValue(item)!;
+
+                var url = await _mediaService.GetLatestUrlAsync(
+                    typeof(TEntity).Name,
+                    id);
+
+                imgProp.SetValue(item, url);
+            }
+        }
+
+        return View("Index", new ListViewModel<TViewModel>
         {
             Page = page,
             PageSize = size,
             TotalCount = totalCount,
             Items = items
-        };
-
-        return View("Index", vm);
+        });
     }
-
     // -------------------------
     // DETAILS
     // -------------------------
@@ -53,10 +76,8 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
 
     // -------------------------
     // CREATE
-    // -------------------------
     public IActionResult Create()
-        => View("Create");
-
+        => View("Create");    // -------------------------
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(TViewModel vm, IFormFile? file)
@@ -66,7 +87,7 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
 
         var entity = _mapper.Map<TEntity>(vm);
 
-        await _service.AddAsync(entity, file); // ✅ PASS FILE HERE
+        await _service.AddAsync(entity, file);
 
         return RedirectToAction(nameof(Index));
     }
@@ -80,6 +101,21 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
         if (entity == null) return NotFound();
 
         var vm = _mapper.Map<TViewModel>(entity);
+
+        // 🔥 LOAD IMAGE FROM MEDIA TABLE
+        if (_mediaService != null)
+        {
+            var url = await _mediaService.GetLatestUrlAsync(
+                typeof(TEntity).Name,
+                id);
+
+            var prop = vm.GetType().GetProperty("ImageUrl");
+            if (prop != null)
+            {
+                prop.SetValue(vm, url);
+            }
+        }
+
         return View("Edit", vm);
     }
 
@@ -119,7 +155,7 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
         var entity = await _service.GetByIdAsync(id);
         if (entity == null) return NotFound();
 
-        await _service.RemoveAsync(entity); // now soft delete works
+        await _service.RemoveAsync(entity);
 
         return RedirectToAction(nameof(Index));
     }

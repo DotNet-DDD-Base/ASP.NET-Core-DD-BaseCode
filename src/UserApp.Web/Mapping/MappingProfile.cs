@@ -29,17 +29,16 @@ public class MappingProfile : Profile
         CreateMap<ProductViewModel, Product>()
             .ForMember(dest => dest.Id, opt => opt.Ignore());
 
-
         // ================= AUTO MAPPINGS =================
         // <AUTO-MAPPINGS-START>
 
 
 
 
-CreateMap<Fun, FunViewModel>();
-CreateMap<FunViewModel, Fun>();
-CreateMap<Table, TableViewModel>();
-CreateMap<TableViewModel, Table>();
+        CreateMap<Fun, FunViewModel>();
+        CreateMap<FunViewModel, Fun>();
+        CreateMap<Table, TableViewModel>();
+        CreateMap<TableViewModel, Table>();
         // <AUTO-MAPPINGS-END>
 
     }

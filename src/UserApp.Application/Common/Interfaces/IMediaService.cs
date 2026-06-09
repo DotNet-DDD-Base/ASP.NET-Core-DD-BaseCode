@@ -10,4 +10,6 @@ public interface IMediaService
     Task UploadAsync(string entityName, Guid entityId, MediaFileInput file);
 
     Task DeleteAsync(Guid mediaId);
+    Task<string?> GetLatestUrlAsync(string entityName, Guid entityId);
+
 }
