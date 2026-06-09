@@ -1,5 +1,4 @@
-using System.Collections.Generic;
-using System.IO;
+using System.Text;
 using UserApp.Application.Common.DTOs;
 using UserApp.Infrastructure.Services.CodeGeneration.Shared;
 
@@ -18,7 +17,7 @@ public class ViewGenerator
         _templates = templates;
     }
 
-    public void GenerateViews(string name, List<ModuleFieldDto> fields)
+    public void GenerateViews(string name, List<ModuleFieldDto> fields, bool hasImage)
     {
         var viewFolder = Path.Combine(_paths.SrcRoot, "UserApp.Web", "Views", name);
         _files.EnsureDirectory(viewFolder);
@@ -28,8 +27,8 @@ public class ViewGenerator
             new Dictionary<string, string>
             {
                 ["Name"] = name,
-                ["Columns"] = BuildTableColumns(fields),
-                ["Rows"] = BuildTableRows(fields)
+                ["Columns"] = BuildTableColumns(fields, hasImage),
+                ["Rows"] = BuildTableRows(fields, hasImage)
             });
 
         var createContent = _templates.RenderFile(
@@ -37,7 +36,7 @@ public class ViewGenerator
             new Dictionary<string, string>
             {
                 ["Name"] = name,
-                ["Inputs"] = BuildFormInputs(fields)
+                ["Inputs"] = BuildFormInputs(fields, hasImage)
             });
 
         var editContent = _templates.RenderFile(
@@ -45,7 +44,7 @@ public class ViewGenerator
             new Dictionary<string, string>
             {
                 ["Name"] = name,
-                ["Inputs"] = BuildFormInputs(fields)
+                ["Inputs"] = BuildFormInputs(fields, hasImage)
             });
 
         _files.WriteFile(Path.Combine(viewFolder, "Index.cshtml"), indexContent);
@@ -53,52 +52,76 @@ public class ViewGenerator
         _files.WriteFile(Path.Combine(viewFolder, "Edit.cshtml"), editContent);
     }
 
-    private static string BuildTableColumns(List<ModuleFieldDto> fields)
+    private static string BuildTableColumns(List<ModuleFieldDto> fields, bool hasImage)
     {
-        var sb = new System.Text.StringBuilder();
+        var sb = new StringBuilder();
 
         foreach (var field in fields)
         {
-            if (field.Name.Equals("Id", System.StringComparison.OrdinalIgnoreCase))
+            if (field.Name.Equals("Id", StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            sb.AppendLine($"                    <th>{field.Name}</th>");
+            sb.AppendLine($"<th>{field.Name}</th>");
+        }
+
+        if (hasImage)
+            sb.AppendLine("<th>Image</th>");
+
+        return sb.ToString();
+    }
+
+    private static string BuildTableRows(List<ModuleFieldDto> fields, bool hasImage)
+    {
+        var sb = new StringBuilder();
+
+        foreach (var field in fields)
+        {
+            if (field.Name.Equals("Id", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            sb.AppendLine($"<td>@p.{field.Name}</td>");
+        }
+
+        if (hasImage)
+        {
+            sb.AppendLine("<td><img src=\"@p.ImageUrl\" width=\"50\" /></td>");
         }
 
         return sb.ToString();
     }
 
-    private static string BuildTableRows(List<ModuleFieldDto> fields)
+    private static string BuildFormInputs(List<ModuleFieldDto> fields, bool hasImage)
     {
-        var sb = new System.Text.StringBuilder();
+        var sb = new StringBuilder();
 
         foreach (var field in fields)
         {
-            if (field.Name.Equals("Id", System.StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            sb.AppendLine($"                    <td>@p.{field.Name}</td>");
-        }
-
-        return sb.ToString();
-    }
-
-    private static string BuildFormInputs(List<ModuleFieldDto> fields)
-    {
-        var sb = new System.Text.StringBuilder();
-
-        foreach (var field in fields)
-        {
-            if (field.Name.Equals("Id", System.StringComparison.OrdinalIgnoreCase))
+            if (field.Name.Equals("Id", StringComparison.OrdinalIgnoreCase))
                 continue;
 
             sb.AppendLine($@"
-        <div class=""form-group"">
-            <label>{field.Name}</label>
-            <input asp-for=""{field.Name}"" class=""form-control"" />
-        </div>");
+<div class=""form-group"">
+    <label>{field.Name}</label>
+    <input asp-for=""{field.Name}"" class=""form-control"" />
+</div>");
+        }
+
+        // ✅ IMAGE BLOCK: real file upload for generated forms
+        if (hasImage)
+        {
+            sb.AppendLine(@"
+<div class=""form-group border p-2 mt-3"">
+    <label>Image</label>
+    <input type=""file"" name=""file"" class=""form-control"" />
+    <small class=""text-muted"">Choose an image file to upload for this item.</small>
+</div>");
         }
 
         return sb.ToString();
+    }
+
+    internal void GenerateViews(string name, List<ModuleFieldDto> fields, object hasImage)
+    {
+        throw new NotImplementedException();
     }
 }

@@ -8,6 +8,7 @@ public interface IModuleGeneratorService
         string moduleName,
         List<ModuleFieldDto> fields,
         bool runMigration = false,
+        bool hasImage = false,
         bool runDbUpdate = false
     );
 }

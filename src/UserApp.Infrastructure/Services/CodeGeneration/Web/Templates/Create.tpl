@@ -2,7 +2,8 @@
 
 <h2>Create {{Name}}</h2>
 
-<form asp-action="Create" method="post">
+<form asp-action="Create" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
 
 {{Inputs}}
 

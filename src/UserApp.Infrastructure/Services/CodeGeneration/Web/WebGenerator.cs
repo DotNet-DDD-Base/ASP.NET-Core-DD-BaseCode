@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using UserApp.Application.Common.DTOs;
 using UserApp.Infrastructure.Services.CodeGeneration.Shared;
 
@@ -12,6 +13,7 @@ public class WebGenerator
     private readonly TemplateEngine _templates;
     private readonly ViewGenerator _views;
 
+
     public WebGenerator(PathProvider paths, FileManager files, TemplateEngine templates)
     {
         _paths = paths;
@@ -20,7 +22,7 @@ public class WebGenerator
         _views = new ViewGenerator(_paths, _files, _templates);
     }
 
-    public void Generate(string name, List<ModuleFieldDto> fields)
+    public void Generate(string name, List<ModuleFieldDto> fields, bool hasImage)
     {
         var controllersFolder = Path.Combine(_paths.SrcRoot, "UserApp.Web", "Controllers");
         var apiControllersFolder = Path.Combine(controllersFolder, "Api");
@@ -49,31 +51,45 @@ public class WebGenerator
             new Dictionary<string, string>
             {
                 ["Name"] = name,
-                ["Properties"] = BuildViewModelProperties(fields)
+                ["Properties"] = BuildViewModelProperties(fields, hasImage)
             });
 
         _files.WriteFile(Path.Combine(controllersFolder, $"{name}Controller.cs"), controllerContent);
         _files.WriteFile(Path.Combine(apiControllersFolder, $"{name}ApiController.cs"), apiControllerContent);
         _files.WriteFile(Path.Combine(viewModelsFolder, $"{name}ViewModel.cs"), viewModelContent);
 
-        _views.GenerateViews(name, fields);
+        _views.GenerateViews(name, fields, hasImage);
     }
 
-    private static string BuildViewModelProperties(List<ModuleFieldDto> fields)
+    private static string BuildViewModelProperties(List<ModuleFieldDto> fields, bool hasImage)
     {
-        var sb = new System.Text.StringBuilder();
+        var sb = new StringBuilder();
 
         foreach (var field in fields)
         {
-            if (field.Name.Equals("Id", System.StringComparison.OrdinalIgnoreCase))
+            if (field.Name.Equals("Id", StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            var nullable = field.IsNullable && field.Type != "string" ? "?" : string.Empty;
-            var property = field.Type == "string"
-                ? $"    public string {field.Name} {{ get; set; }} = string.Empty;"
-                : $"    public {field.Type}{nullable} {field.Name} {{ get; set; }}";
+            var type = field.Type;
+            var name = field.Name;
 
-            sb.AppendLine(property);
+            if (type == "string")
+            {
+                sb.AppendLine($"    public string {name} {{ get; set; }} = string.Empty;");
+            }
+            else
+            {
+                var nullable = field.IsNullable ? "?" : string.Empty;
+                sb.AppendLine($"    public {type}{nullable} {name} {{ get; set; }}");
+            }
+        }
+
+        // ✅ ADD IMAGE FIELD (from Media table, not DB column)
+        if (hasImage)
+        {
+            sb.AppendLine();
+            sb.AppendLine("    public string? ImageUrl { get; set; }");
+            sb.AppendLine("    public Guid? MediaId { get; set; }");
         }
 
         return sb.ToString();

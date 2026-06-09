@@ -134,9 +134,13 @@ builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-UserApp.Application.Common.ServiceProviderAccessor.Current = app.Services;
-
 // ... (database migrations and environments check)
+
+app.Use(async (context, next) =>
+{
+    UserApp.Application.Common.ServiceProviderAccessor.Current = context.RequestServices;
+    await next();
+});
 
 app.UseStaticFiles();
 

@@ -44,6 +44,7 @@ public class ModuleGeneratorService : IModuleGeneratorService
         string moduleName,
         List<ModuleFieldDto> fields,
         bool runMigration = false,
+        bool hasImage = false,
         bool runDbUpdate = false
     )
     {
@@ -54,10 +55,10 @@ public class ModuleGeneratorService : IModuleGeneratorService
 
         Console.WriteLine($"Generating module: {name}");
 
-        _domain.Generate(name, fields);
+        _domain.Generate(name, fields,hasImage);
         _application.Generate(name);
         _infrastructure.Generate(name);
-        _web.Generate(name, fields);
+        _web.Generate(name, fields,hasImage);
 
         _mappingUpdater.Update(name);
         _dbContextUpdater.Update(name);

@@ -45,11 +45,12 @@ public class ModuleGeneratorController : Controller
             }).ToList();
 
         await _service.GenerateModuleAsync(
-    moduleName,
-    fields,
-    vm.RunMigration,
-    vm.RunDbUpdate
-);
+            moduleName,
+            fields,
+            vm.RunMigration,
+            vm.HasImage,
+            vm.RunDbUpdate
+        );
 
         TempData["Success"] = $"{moduleName} module generated successfully!";
         return RedirectToAction(nameof(Index));
