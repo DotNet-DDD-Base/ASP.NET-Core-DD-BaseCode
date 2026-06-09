@@ -7,10 +7,8 @@ namespace UserApp.Application.Products;
 
 public class ProductService : BaseService<Product>, IProductService
 {
-    public ProductService(
-        IProductRepository repo,
-        IMediaPipeline mediaPipeline)
-        : base(repo, mediaPipeline)
+    public ProductService(IProductRepository repo)
+        : base(repo)
     {
     }
 }

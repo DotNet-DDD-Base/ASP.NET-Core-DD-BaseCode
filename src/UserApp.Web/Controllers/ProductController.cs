@@ -1,6 +1,5 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using UserApp.Application.Common.Interfaces;
 using UserApp.Application.Products.Interfaces;
 using UserApp.Domain.Products;
 using UserApp.Web.ViewModels;
@@ -11,9 +10,8 @@ public class ProductController : BaseController<Product, ProductViewModel>
 {
     public ProductController(
         IProductService service,
-        IMapper mapper,
-        IMediaService mediaService)
-        : base(service, mapper, mediaService)
+        IMapper mapper)
+        : base(service, mapper)
     {
     }
 

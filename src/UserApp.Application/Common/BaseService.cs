@@ -8,11 +8,13 @@ public class BaseService<T> : IBaseService<T> where T : class
 {
     protected readonly IBaseRepository<T> _repo;
     protected readonly IMediaPipeline? _mediaPipeline;
+    protected readonly IMediaService? _mediaService;
 
-    public BaseService(IBaseRepository<T> repo, IMediaPipeline? mediaPipeline = null)
+    public BaseService(IBaseRepository<T> repo)
     {
         _repo = repo;
-        _mediaPipeline = mediaPipeline;
+        _mediaPipeline = ServiceProviderAccessor.Current?.GetService(typeof(IMediaPipeline)) as IMediaPipeline;
+        _mediaService = ServiceProviderAccessor.Current?.GetService(typeof(IMediaService)) as IMediaService;
     }
 
     public Task<T?> GetByIdAsync(Guid id) => _repo.GetByIdAsync(id);
@@ -29,8 +31,8 @@ public class BaseService<T> : IBaseService<T> where T : class
         // 🔥 FIRST SAVE so ID exists
         await _repo.SaveChangesAsync();
 
-        // THEN media
-        if (_mediaPipeline != null && file != null)
+        // THEN media only for entities that explicitly support media
+        if (entity is IHasMedia && _mediaPipeline != null && file != null)
         {
             await _mediaPipeline.HandleCreateAsync(typeof(T).Name, entity, file);
             // 🔥 SAVE MEDIA
@@ -48,7 +50,7 @@ public class BaseService<T> : IBaseService<T> where T : class
         _repo.Update(entity);
 
         // 🔥 HANDLE MEDIA FIRST (track changes in same context)
-        if (_mediaPipeline != null && file != null)
+        if (entity is IHasMedia && _mediaPipeline != null && file != null)
         {
             await _mediaPipeline.HandleUpdateAsync(typeof(T).Name, entity, file);
         }
@@ -62,7 +64,7 @@ public class BaseService<T> : IBaseService<T> where T : class
         if (entity == null)
             throw new ArgumentNullException(nameof(entity));
 
-        if (_mediaPipeline != null)
+        if (entity is IHasMedia && _mediaPipeline != null)
         {
             await _mediaPipeline.HandleDeleteAsync(typeof(T).Name, entity);
         }
@@ -70,6 +72,11 @@ public class BaseService<T> : IBaseService<T> where T : class
         _repo.Remove(entity);
         await _repo.SaveChangesAsync();
     }
+
+    public virtual async Task<string?> GetImageUrlAsync(Guid id)
+        => _mediaService != null
+            ? await _mediaService.GetLatestUrlAsync(typeof(T).Name, id)
+            : null;
 
     public Task SaveAsync() => _repo.SaveChangesAsync();
 }

@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using UserApp.Application.Common;
 using UserApp.Application.Common.Interfaces;
 using UserApp.Web.ViewModels;
@@ -14,6 +15,8 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
     protected readonly IMapper _mapper;
     protected readonly IMediaService? _mediaService;
 
+    private IMediaService? MediaService =>
+        _mediaService ?? HttpContext?.RequestServices.GetService<IMediaService>();
 
     protected BaseController(
         IBaseService<TEntity> service,
@@ -35,7 +38,8 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
 
         var items = _mapper.Map<List<TViewModel>>(data);
 
-        if (_mediaService != null)
+        var mediaService = MediaService;
+        if (mediaService != null)
         {
             foreach (var item in items)
             {
@@ -46,7 +50,7 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
 
                 var id = (Guid)idProp.GetValue(item)!;
 
-                var url = await _mediaService.GetLatestUrlAsync(
+                var url = await mediaService.GetLatestUrlAsync(
                     typeof(TEntity).Name,
                     id);
 
@@ -71,6 +75,20 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
         if (entity == null) return NotFound();
 
         var vm = _mapper.Map<TViewModel>(entity);
+
+        var mediaService = MediaService;
+        if (mediaService != null)
+        {
+            var idProp = vm.GetType().GetProperty("Id");
+            var imgProp = vm.GetType().GetProperty("ImageUrl");
+
+            if (idProp != null && imgProp != null)
+            {
+                var entityId = (Guid)idProp.GetValue(vm)!;
+                imgProp.SetValue(vm, await mediaService.GetLatestUrlAsync(typeof(TEntity).Name, entityId));
+            }
+        }
+
         return View("Details", vm);
     }
 
@@ -103,9 +121,10 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
         var vm = _mapper.Map<TViewModel>(entity);
 
         // 🔥 LOAD IMAGE FROM MEDIA TABLE
-        if (_mediaService != null)
+        var mediaService = MediaService;
+        if (mediaService != null)
         {
-            var url = await _mediaService.GetLatestUrlAsync(
+            var url = await mediaService.GetLatestUrlAsync(
                 typeof(TEntity).Name,
                 id);
 

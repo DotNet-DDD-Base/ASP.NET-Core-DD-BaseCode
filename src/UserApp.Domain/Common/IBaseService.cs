@@ -9,6 +9,7 @@ public interface IBaseService<T>
     Task AddAsync(T entity, object? file = null);
     Task UpdateAsync(T entity, object? file = null);
     Task RemoveAsync(T entity);
+    Task<string?> GetImageUrlAsync(Guid id);
 
     Task SaveAsync();
 }
