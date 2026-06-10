@@ -10,7 +10,6 @@ public class PapViewModel
     public string Name { get; set; } = string.Empty;
 
 
-    public string? ImageUrl { get; set; }
-    public Guid? MediaId { get; set; }
+    public List<string> ImageUrls { get; set; } = [];
 
 }

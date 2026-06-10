@@ -113,12 +113,11 @@ public class WebGenerator
             sb.AppendLine();
         }
 
-        // ✅ ADD IMAGE FIELD (from Media table, not DB column)
+        // ✅ ADD IMAGE FIELDS (from Media table, not DB column)
         if (hasImage)
         {
             sb.AppendLine();
-            sb.AppendLine("    public string? ImageUrl { get; set; }");
-            sb.AppendLine("    public Guid? MediaId { get; set; }");
+            sb.AppendLine("    public List<string> ImageUrls { get; set; } = [];");
         }
 
         return sb.ToString();

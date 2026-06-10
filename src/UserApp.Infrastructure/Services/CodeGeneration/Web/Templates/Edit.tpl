@@ -12,6 +12,7 @@
          class="text-danger mb-3">
     </div>
 
+{{CurrentImages}}
 {{Inputs}}
 
     <div class="mt-3">

@@ -19,18 +19,24 @@ public class MediaPipeline : IMediaPipeline
 
     public async Task HandleCreateAsync(string entityName, object entity, object? file)
     {
-        if (file is not IFormFile f) return;
+        var files = ResolveFiles(file);
+        if (files == null) return;
 
-        var path = await _storage.SaveAsync(f);
+        var entityId = GetId(entity);
 
-        await _repo.AddAsync(new MediaEntity
+        foreach (var f in files)
         {
-            EntityName = entityName,
-            EntityId = GetId(entity),
-            Url = path,
-            OriginalName = f.FileName,
-            MimeType = f.ContentType
-        });
+            var path = await _storage.SaveAsync(f);
+
+            await _repo.AddAsync(new MediaEntity
+            {
+                EntityName = entityName,
+                EntityId = entityId,
+                Url = path,
+                OriginalName = f.FileName,
+                MimeType = f.ContentType
+            });
+        }
     }
 
     public Task HandleUpdateAsync(string entityName, object entity, object? file)
@@ -50,7 +56,23 @@ public class MediaPipeline : IMediaPipeline
         await _repo.SaveChangesAsync();
     }
 
-    private Guid GetId(object entity)
+    private static IEnumerable<IFormFile>? ResolveFiles(object? file)
+    {
+        if (file == null) return null;
+
+        if (file is IEnumerable<IFormFile> enumerable)
+        {
+            var list = enumerable.Where(f => f != null && f.Length > 0).ToList();
+            return list.Count > 0 ? list : null;
+        }
+
+        if (file is IFormFile single && single.Length > 0)
+            return [single];
+
+        return null;
+    }
+
+    private static Guid GetId(object entity)
     {
         var prop = entity.GetType().GetProperty("Id");
         return (Guid)(prop?.GetValue(entity) ?? Guid.Empty);

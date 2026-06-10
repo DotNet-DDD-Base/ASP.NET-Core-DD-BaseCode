@@ -14,7 +14,6 @@ public class MilkViewModel
     public int Price { get; set; }
 
 
-    public string? ImageUrl { get; set; }
-    public Guid? MediaId { get; set; }
+    public List<string> ImageUrls { get; set; } = [];
 
 }

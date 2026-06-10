@@ -10,7 +10,7 @@
             <th>Id</th>
 <th>Name</th>
 <th>Price</th>
-<th>Image</th>
+<th>Images</th>
 
             <th>Actions</th>
         </tr>
@@ -22,7 +22,17 @@
             <td>@p.Id</td>
 <td>@p.Name</td>
 <td>@p.Price</td>
-<td><img src="@p.ImageUrl" width="50" /></td>
+<td>
+    @if (p.ImageUrls.Count > 0)
+    {
+        <div style="display:flex; gap:4px;">
+        @foreach (var img in p.ImageUrls.Take(3))
+        {
+            <img src="@img" width="50" height="50" style="object-fit:cover;" />
+        }
+        </div>
+    }
+</td>
 
             <td>
                 <a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-primary">Edit</a>

@@ -13,19 +13,24 @@ public class MediaController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> Upload(string entityName, Guid entityId, IFormFile file)
+    public async Task<IActionResult> Upload(string entityName, Guid entityId, List<IFormFile> files)
     {
-        using var ms = new MemoryStream();
-        await file.CopyToAsync(ms);
-
-        var input = new MediaFileInput
+        foreach (var file in files)
         {
-            FileName = file.FileName,
-            ContentType = file.ContentType,
-            Data = ms.ToArray()
-        };
+            if (file.Length == 0) continue;
 
-        await _mediaService.UploadAsync(entityName, entityId, input);
+            using var ms = new MemoryStream();
+            await file.CopyToAsync(ms);
+
+            var input = new MediaFileInput
+            {
+                FileName = file.FileName,
+                ContentType = file.ContentType,
+                Data = ms.ToArray()
+            };
+
+            await _mediaService.UploadAsync(entityName, entityId, input);
+        }
 
         return Ok();
     }

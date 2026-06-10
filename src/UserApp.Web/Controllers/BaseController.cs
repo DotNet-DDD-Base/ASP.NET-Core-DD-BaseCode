@@ -29,9 +29,21 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
         _mediaService = mediaService;
     }
 
-    // -------------------------
-    // INDEX
-    // -------------------------
+    private async Task LoadImageUrls(object vm, Guid? entityId = null)
+    {
+        var mediaService = MediaService;
+        if (mediaService == null) return;
+
+        var idProp = vm.GetType().GetProperty("Id");
+        var imgProp = vm.GetType().GetProperty("ImageUrls");
+        if (idProp == null || imgProp == null) return;
+
+        var id = entityId ?? (Guid)idProp.GetValue(vm)!;
+        var media = await mediaService.GetAsync(typeof(TEntity).Name, id);
+        var urls = media.Select(x => x.Url).ToList();
+        imgProp.SetValue(vm, urls);
+    }
+
     public async Task<IActionResult> Index(int page = 1, int size = 10)
     {
         var data = await _service.ListAsync((page - 1) * size, size);
@@ -39,24 +51,9 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
 
         var items = _mapper.Map<List<TViewModel>>(data);
 
-        var mediaService = MediaService;
-        if (mediaService != null)
+        foreach (var item in items)
         {
-            foreach (var item in items)
-            {
-                var idProp = item.GetType().GetProperty("Id");
-                var imgProp = item.GetType().GetProperty("ImageUrl");
-
-                if (idProp == null || imgProp == null) continue;
-
-                var id = (Guid)idProp.GetValue(item)!;
-
-                var url = await mediaService.GetLatestUrlAsync(
-                    typeof(TEntity).Name,
-                    id);
-
-                imgProp.SetValue(item, url);
-            }
+            await LoadImageUrls(item);
         }
 
         return View("Index", new ListViewModel<TViewModel>
@@ -67,81 +64,49 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
             Items = items
         });
     }
-    // -------------------------
-    // DETAILS
-    // -------------------------
+
     public async Task<IActionResult> Details(Guid id)
     {
         var entity = await _service.GetByIdAsync(id);
         if (entity == null) return NotFound();
 
         var vm = _mapper.Map<TViewModel>(entity);
-
-        var mediaService = MediaService;
-        if (mediaService != null)
-        {
-            var idProp = vm.GetType().GetProperty("Id");
-            var imgProp = vm.GetType().GetProperty("ImageUrl");
-
-            if (idProp != null && imgProp != null)
-            {
-                var entityId = (Guid)idProp.GetValue(vm)!;
-                imgProp.SetValue(vm, await mediaService.GetLatestUrlAsync(typeof(TEntity).Name, entityId));
-            }
-        }
+        await LoadImageUrls(vm, id);
 
         return View("Details", vm);
     }
 
-    // -------------------------
-    // CREATE
     public IActionResult Create()
-        => View("Create");    // -------------------------
+        => View("Create");
+
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public virtual async Task<IActionResult> Create(TViewModel vm)
+    public virtual async Task<IActionResult> Create(TViewModel vm, List<IFormFile>? files = null)
     {
         if (!ValidateModel(vm))
             return View(vm);
 
         var entity = _mapper.Map<TEntity>(vm);
 
-        await _service.AddAsync(entity);
+        await _service.AddAsync(entity, files);
 
         return RedirectToAction(nameof(Index));
     }
 
-    // -------------------------
-    // EDIT
-    // -------------------------
     public async Task<IActionResult> Edit(Guid id)
     {
         var entity = await _service.GetByIdAsync(id);
         if (entity == null) return NotFound();
 
         var vm = _mapper.Map<TViewModel>(entity);
-
-        // 🔥 LOAD IMAGE FROM MEDIA TABLE
-        var mediaService = MediaService;
-        if (mediaService != null)
-        {
-            var url = await mediaService.GetLatestUrlAsync(
-                typeof(TEntity).Name,
-                id);
-
-            var prop = vm.GetType().GetProperty("ImageUrl");
-            if (prop != null)
-            {
-                prop.SetValue(vm, url);
-            }
-        }
+        await LoadImageUrls(vm, id);
 
         return View("Edit", vm);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(Guid id, TViewModel vm, IFormFile? file)
+    public async Task<IActionResult> Edit(Guid id, TViewModel vm, List<IFormFile>? files = null)
     {
         if (!ModelState.IsValid)
             return View("Edit", vm);
@@ -151,14 +116,11 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
 
         _mapper.Map(vm, entity);
 
-        await _service.UpdateAsync(entity, file);
+        await _service.UpdateAsync(entity, files);
 
         return RedirectToAction(nameof(Index));
     }
 
-    // -------------------------
-    // DELETE
-    // -------------------------
     public async Task<IActionResult> Delete(Guid id)
     {
         var entity = await _service.GetByIdAsync(id);
@@ -179,6 +141,7 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
 
         return RedirectToAction(nameof(Index));
     }
+
     protected bool ValidateModel<T>(T model)
     {
         var results = DynamicValidator.Validate(model);

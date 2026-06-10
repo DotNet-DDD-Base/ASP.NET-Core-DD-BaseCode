@@ -44,6 +44,7 @@ public class ViewGenerator
             new Dictionary<string, string>
             {
                 ["Name"] = name,
+                ["CurrentImages"] = BuildCurrentImages(hasImage),
                 ["Inputs"] = BuildFormInputs(fields, hasImage)
             });
 
@@ -65,7 +66,7 @@ public class ViewGenerator
         }
 
         if (hasImage)
-            sb.AppendLine("<th>Image</th>");
+            sb.AppendLine("<th>Images</th>");
 
         return sb.ToString();
     }
@@ -84,7 +85,17 @@ public class ViewGenerator
 
         if (hasImage)
         {
-            sb.AppendLine("<td><img src=\"@p.ImageUrl\" width=\"50\" /></td>");
+            sb.AppendLine(@"<td>
+    @if (p.ImageUrls.Count > 0)
+    {
+        <div style=""display:flex; gap:4px;"">
+        @foreach (var img in p.ImageUrls.Take(3))
+        {
+            <img src=""@img"" width=""50"" height=""50"" style=""object-fit:cover;"" />
+        }
+        </div>
+    }
+</td>");
         }
 
         return sb.ToString();
@@ -112,9 +123,9 @@ public class ViewGenerator
         {
             sb.AppendLine(@"
 <div class=""form-group border p-2 mt-3"">
-    <label>Image</label>
-    <input type=""file"" name=""file"" class=""form-control"" />
-    <small class=""text-muted"">Choose an image file to upload for this item.</small>
+    <label>Images</label>
+    <input type=""file"" name=""files"" multiple class=""form-control"" />
+    <small class=""text-muted"">Choose one or more image files to upload for this item.</small>
 </div>");
         }
 
@@ -124,6 +135,28 @@ public class ViewGenerator
     internal void GenerateViews(string name, List<ModuleFieldDto> fields, object hasImage)
     {
         throw new NotImplementedException();
+    }
+
+    private static string BuildCurrentImages(bool hasImage)
+    {
+        if (!hasImage) return string.Empty;
+
+        return @"
+@if (Model.ImageUrls.Count > 0)
+{
+    <div class=""form-group border p-2 mt-3"">
+        <label>Current Images</label>
+        <div style=""display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;"">
+        @foreach (var img in Model.ImageUrls)
+        {
+            <div>
+                <img src=""@img"" width=""100"" height=""100"" style=""object-fit:cover; border:1px solid #ddd; border-radius:4px;"" />
+            </div>
+        }
+        </div>
+    </div>
+}
+";
     }
 
     private string BuildProperty(ModuleFieldDto field)

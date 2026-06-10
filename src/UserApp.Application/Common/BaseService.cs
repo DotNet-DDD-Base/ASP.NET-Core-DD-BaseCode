@@ -73,10 +73,14 @@ public class BaseService<T> : IBaseService<T> where T : class
         await _repo.SaveChangesAsync();
     }
 
-    public virtual async Task<string?> GetImageUrlAsync(Guid id)
-        => _mediaService != null
-            ? await _mediaService.GetLatestUrlAsync(typeof(T).Name, id)
-            : null;
+    public virtual async Task<List<string>> GetImageUrlsAsync(Guid id)
+    {
+        if (_mediaService == null)
+            return [];
+
+        var media = await _mediaService.GetAsync(typeof(T).Name, id);
+        return media.Select(x => x.Url).ToList();
+    }
 
     public Task SaveAsync() => _repo.SaveChangesAsync();
 }

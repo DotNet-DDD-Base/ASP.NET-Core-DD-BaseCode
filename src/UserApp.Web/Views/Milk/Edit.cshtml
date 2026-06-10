@@ -25,10 +25,25 @@
     <span asp-validation-for="Price" class="text-danger"></span>
 </div>
 
+@if (Model.ImageUrls.Count > 0)
+{
+    <div class="form-group border p-2 mt-3">
+        <label>Current Images</label>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+        @foreach (var img in Model.ImageUrls)
+        {
+            <div>
+                <img src="@img" width="100" height="100" style="object-fit:cover; border:1px solid #ddd; border-radius:4px;" />
+            </div>
+        }
+        </div>
+    </div>
+}
+
 <div class="form-group border p-2 mt-3">
-    <label>Image</label>
-    <input type="file" name="file" class="form-control" />
-    <small class="text-muted">Choose an image file to upload for this item.</small>
+    <label>Add More Images</label>
+    <input type="file" name="files" multiple class="form-control" />
+    <small class="text-muted">Choose additional image files to upload for this item.</small>
 </div>
 
 
