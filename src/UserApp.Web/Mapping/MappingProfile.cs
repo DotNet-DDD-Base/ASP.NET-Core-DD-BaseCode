@@ -1,6 +1,5 @@
 using AutoMapper;
 using UserApp.Domain.Users;
-using UserApp.Domain.Products;
 using UserApp.Web.ViewModels;
 using UserApp.Application.Users.DTOs;
 using UserApp.Domain.Funs;
@@ -23,11 +22,6 @@ public class MappingProfile : Profile
         CreateMap<UserViewModel, User>()
             .ForMember(dest => dest.Id, opt => opt.Ignore());
 
-        // ==================== PRODUCT MAPPINGS ====================
-        CreateMap<Product, ProductViewModel>();
-
-        CreateMap<ProductViewModel, Product>()
-            .ForMember(dest => dest.Id, opt => opt.Ignore());
 
         // ================= AUTO MAPPINGS =================
         // <AUTO-MAPPINGS-START>

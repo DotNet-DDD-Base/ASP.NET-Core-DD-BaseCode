@@ -77,11 +77,23 @@ public abstract class BaseApiController<TEntity, TViewModel> : ControllerBase
     public async Task<ActionResult<ApiResponse<object>>> Update(Guid id, [FromBody] TViewModel vm)
     {
         var entity = await _service.GetByIdAsync(id);
-
-        if (entity == null)
-            return NotFound(ApiResponse<object>.Fail("Data not found"));
+        if (entity == null) return NotFound(ApiResponse<object>.Fail("Data not found"));
 
         _mapper.Map(vm, entity);
+
+        // 2. Use Reflection to set ID, bypassing access modifiers
+        var prop = typeof(TEntity).GetProperty("Id");
+        if (prop != null && prop.CanWrite)
+        {
+            prop.SetValue(entity, id);
+        }
+        else
+        {
+            // Fallback: If PropertyInfo failed, check if base class has it
+            var baseProp = typeof(Entity<Guid>).GetProperty("Id");
+            baseProp?.SetValue(entity, id);
+        }
+
         await _service.UpdateAsync(entity);
         await _service.SaveAsync();
 

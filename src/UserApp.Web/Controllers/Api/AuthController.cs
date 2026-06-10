@@ -33,48 +33,84 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Login(LoginRequest req)
     {
-        var user = await _userService.ValidateUserAsync(req.Email, req.Password);
-
+    try
+    {
+    var user = await _userService.ValidateUserAsync(
+    req.Email,
+    req.Password
+    );
         if (user == null)
-            return Unauthorized(ApiResponse<object>.Fail("Invalid credentials"));
+        {
+            return Unauthorized(new ApiResponse<object>
+            {
+                Success = false,
+                Message = "Invalid credentials.",
+                Data = new { field = "credentials" }
+            });
+        }
 
         var accessToken = GenerateToken(user);
-        var refreshToken = await _authService.CreateRefreshTokenAsync(user.Id);
 
-        // Return user info along with your tokens
-        return Ok(ApiResponse<object>.Ok(new
+        var refreshToken =
+            await _authService.CreateRefreshTokenAsync(user.Id);
+
+        return Ok(new ApiResponse<object>
         {
-            access_token = accessToken,
-            refresh_token = refreshToken.Token,
-            user = new
+            Success = true,
+            Message = "Login successful",
+            Data = new
             {
-                id = user.Id,
-                email = user.Email.Value,
-                fullName = user.FullName // Make sure this matches your entity property
+                access_token = accessToken,
+                refresh_token = refreshToken.Token,
+                user = new
+                {
+                    id = user.Id,
+                    email = user.Email.Value,
+                    fullName = user.FullName
+                }
             }
-        }, "Login successful"));
+        });
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, new ApiResponse<object>
+        {
+            Success = false,
+            Message = ex.Message,
+            Data = null
+        });
+    }
+
     }
 
 
+
     [HttpPost("register")]
-    [AllowAnonymous]
     public async Task<IActionResult> Register(RegisterRequest req)
     {
-        var user = await _userService.CreateAsync(
-            req.Email,
-            req.FullName,
-            req.Password
-        );
-
-        if (user == null)
-            return BadRequest(ApiResponse<object>.Fail("Registration failed"));
-
-        return Ok(ApiResponse<object>.Ok(new
+        try
         {
-            userId = user.Id,
-            email = user.Email,
-            fullName = user.FullName
-        }, "User registered successfully"));
+            var result = await _userService.CreateAsync(
+                req.Email,
+                req.FullName,
+                req.Password
+            );
+
+            return Ok(new ApiResponse<object>
+            {
+                Success = true,
+                Message = "User registered successfully",
+                Data = result
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ApiResponse<object>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
     }
 
 

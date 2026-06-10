@@ -5,13 +5,9 @@ using UserApp.Web.Mapping;
 using UserApp.Infrastructure.Persistence.Repositories;
 using UserApp.Domain.Common;
 using UserApp.Domain.Users;
-using UserApp.Domain.Products;
 using UserApp.Application.Common;
 using UserApp.Application.Users.Interfaces;
 using UserApp.Application.Users;
-using UserApp.Application.Products.Interfaces;
-using UserApp.Application.Products;
-
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -60,7 +56,6 @@ builder.Services.AddScoped<ITableRepository, TableRepository>();
 // <AUTO-REPOSITORIES-END>
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IMediaRepository, MediaRepository>();
 
 
@@ -76,7 +71,6 @@ builder.Services.AddScoped<ITableService, TableService>();
 // <AUTO-SERVICES-END>
 
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMediaService, MediaService>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
