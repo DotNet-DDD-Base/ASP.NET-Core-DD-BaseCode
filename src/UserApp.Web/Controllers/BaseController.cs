@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using UserApp.Application.Common;
 using UserApp.Application.Common.Interfaces;
+using UserApp.Application.Common.Media;
 using UserApp.Web.Common;
 using UserApp.Web.ViewModels;
 
@@ -35,13 +36,23 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
         if (mediaService == null) return;
 
         var idProp = vm.GetType().GetProperty("Id");
-        var imgProp = vm.GetType().GetProperty("ImageUrls");
-        if (idProp == null || imgProp == null) return;
+        if (idProp == null) return;
 
         var id = entityId ?? (Guid)idProp.GetValue(vm)!;
         var media = await mediaService.GetAsync(typeof(TEntity).Name, id);
-        var urls = media.Select(x => x.Url).ToList();
-        imgProp.SetValue(vm, urls);
+
+        var imgProp = vm.GetType().GetProperty("ImageUrls");
+        if (imgProp != null)
+        {
+            var urls = media.Select(x => x.Url).ToList();
+            imgProp.SetValue(vm, urls);
+        }
+
+        var mediaProp = vm.GetType().GetProperty("MediaList");
+        if (mediaProp != null)
+        {
+            mediaProp.SetValue(vm, media);
+        }
     }
 
     public async Task<IActionResult> Index(int page = 1, int size = 10)
@@ -115,6 +126,31 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
         if (entity == null) return NotFound();
 
         _mapper.Map(vm, entity);
+
+        var mediaService = MediaService;
+        if (mediaService != null)
+        {
+            var entityName = typeof(TEntity).Name;
+            foreach (var formFile in Request.Form.Files)
+            {
+                if (!formFile.Name.StartsWith("replace_") || formFile.Length == 0) continue;
+
+                var mediaIdStr = formFile.Name["replace_".Length..];
+                if (!Guid.TryParse(mediaIdStr, out var mediaId)) continue;
+
+                await mediaService.DeleteAsync(mediaId);
+
+                using var ms = new MemoryStream();
+                await formFile.CopyToAsync(ms);
+                var input = new MediaFileInput
+                {
+                    FileName = formFile.FileName,
+                    ContentType = formFile.ContentType,
+                    Data = ms.ToArray()
+                };
+                await mediaService.UploadAsync(entityName, id, input);
+            }
+        }
 
         await _service.UpdateAsync(entity, files);
 

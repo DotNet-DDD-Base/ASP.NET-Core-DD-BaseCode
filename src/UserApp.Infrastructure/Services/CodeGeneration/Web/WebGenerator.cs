@@ -118,6 +118,7 @@ public class WebGenerator
         {
             sb.AppendLine();
             sb.AppendLine("    public List<string> ImageUrls { get; set; } = [];");
+            sb.AppendLine("    public List<MediaDto> MediaList { get; set; } = [];");
         }
 
         return sb.ToString();

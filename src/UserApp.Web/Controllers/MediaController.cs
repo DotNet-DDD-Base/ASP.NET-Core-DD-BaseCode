@@ -34,4 +34,11 @@ public class MediaController : Controller
 
         return Ok();
     }
+
+    [HttpPost]
+    public async Task<IActionResult> Delete(Guid mediaId)
+    {
+        await _mediaService.DeleteAsync(mediaId);
+        return Ok();
+    }
 }

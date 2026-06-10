@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using UserApp.Application.Media;
 namespace UserApp.Web.ViewModels;
 
 public class PapViewModel
@@ -11,5 +12,6 @@ public class PapViewModel
 
 
     public List<string> ImageUrls { get; set; } = [];
+    public List<MediaDto> MediaList { get; set; } = [];
 
 }

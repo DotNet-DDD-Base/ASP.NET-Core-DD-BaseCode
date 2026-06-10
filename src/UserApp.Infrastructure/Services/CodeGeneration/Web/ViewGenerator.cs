@@ -45,7 +45,8 @@ public class ViewGenerator
             {
                 ["Name"] = name,
                 ["CurrentImages"] = BuildCurrentImages(hasImage),
-                ["Inputs"] = BuildFormInputs(fields, hasImage)
+                ["Inputs"] = BuildFormInputs(fields, hasImage),
+                ["Scripts"] = BuildMediaScripts(hasImage)
             });
 
         _files.WriteFile(Path.Combine(viewFolder, "Index.cshtml"), indexContent);
@@ -142,20 +143,54 @@ public class ViewGenerator
         if (!hasImage) return string.Empty;
 
         return @"
-@if (Model.ImageUrls.Count > 0)
+@if (Model.MediaList.Count > 0)
 {
     <div class=""form-group border p-2 mt-3"">
         <label>Current Images</label>
-        <div style=""display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;"">
-        @foreach (var img in Model.ImageUrls)
+        <div style=""display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;"">
+        @foreach (var media in Model.MediaList)
         {
-            <div>
-                <img src=""@img"" width=""100"" height=""100"" style=""object-fit:cover; border:1px solid #ddd; border-radius:4px;"" />
+            <div class=""media-item"" style=""position:relative; display:inline-block;"">
+                <img src=""@media.Url"" width=""120"" height=""120"" style=""object-fit:cover; border:1px solid #ddd; border-radius:4px;"" />
+                <button type=""button""
+                        class=""btn btn-danger btn-sm""
+                        style=""position:absolute; top:-8px; right:-8px; border-radius:50%; width:24px; height:24px; padding:0; line-height:1; font-size:14px;""
+                        onclick=""deleteMedia('@media.Id', this)"">
+                    &times;
+                </button>
+                <div style=""margin-top:4px;"">
+                    <input type=""file"" name=""replace_@media.Id"" class=""form-control form-control-sm"" accept=""image/*"" />
+                    <small class=""text-muted"">Replace this image</small>
+                </div>
             </div>
         }
         </div>
     </div>
 }
+";
+    }
+
+    private static string BuildMediaScripts(bool hasImage)
+    {
+        if (!hasImage) return string.Empty;
+
+        return @"
+    <script>
+        function deleteMedia(mediaId, btn) {
+            if (!confirm('Delete this image?')) return;
+            fetch('@Url.Action(""Delete"", ""Media"")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'mediaId=' + mediaId
+            }).then(r => {
+                if (r.ok) {
+                    btn.closest('.media-item').remove();
+                } else {
+                    alert('Failed to delete image');
+                }
+            }).catch(() => alert('Failed to delete image'));
+        }
+    </script>
 ";
     }
 

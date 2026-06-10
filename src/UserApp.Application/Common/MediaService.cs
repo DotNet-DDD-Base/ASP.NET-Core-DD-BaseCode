@@ -27,6 +27,7 @@ public class MediaService : IMediaService
 
         return media.Select(x => new MediaDto
         {
+            Id = x.Id,
             Url = x.Url,
             OriginalName = x.OriginalName
         }).ToList();

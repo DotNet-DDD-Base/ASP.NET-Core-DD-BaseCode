@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using UserApp.Application.Media;
 namespace UserApp.Web.ViewModels;
 
 public class MilkViewModel
@@ -15,5 +16,6 @@ public class MilkViewModel
 
 
     public List<string> ImageUrls { get; set; } = [];
+    public List<MediaDto> MediaList { get; set; } = [];
 
 }
