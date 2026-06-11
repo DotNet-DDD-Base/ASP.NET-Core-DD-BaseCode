@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using UserApp.Application.Users.DTOs;
 using UserApp.Application.Users.Interfaces;
 using UserApp.Application.Common;
 using UserApp.Domain.Common;
@@ -98,10 +99,8 @@ public class AuthApiController : ControllerBase
     {
         try
         {
-            var result = await _userService.CreateAsync(
-                req.Email,
-                req.FullName,
-                req.Password
+            var result = await _authService.RegisterAsync(
+                new RegisterDto(req.Email, req.FullName, req.Password)
             );
 
             return Ok(new ApiResponse<object>
@@ -114,6 +113,14 @@ public class AuthApiController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(new ApiResponse<object>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new ApiResponse<object>
             {
                 Success = false,
                 Message = ex.Message
