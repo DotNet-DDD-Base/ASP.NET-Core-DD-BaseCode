@@ -142,6 +142,27 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
             RoleClaimType = ClaimTypes.Role
         };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnChallenge = context =>
+            {
+                context.HandleResponse();
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+                return context.Response.WriteAsync(
+                    """{"success":false,"message":"Unauthorized"}"""
+                );
+            },
+            OnForbidden = context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.ContentType = "application/json";
+                return context.Response.WriteAsync(
+                    """{"success":false,"message":"Forbidden"}"""
+                );
+            }
+        };
     });
 
 builder.Services.AddAuthorization();

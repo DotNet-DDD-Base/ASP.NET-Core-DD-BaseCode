@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using System.Text.Json;
 using UserApp.Application.Common.Interfaces;
 
 namespace UserApp.Web.Common;
@@ -20,16 +21,7 @@ public class PermissionFilter : IAsyncActionFilter
         ActionExecutionDelegate next)
     {
         // =====================================================
-        // 1. SKIP API ROUTES (authenticated via JWT)
-        // =====================================================
-        if (context.HttpContext.Request.Path.StartsWithSegments("/api"))
-        {
-            await next();
-            return;
-        }
-
-        // =====================================================
-        // 2. SKIP IF [AllowAnonymous]
+        // 1. SKIP IF [AllowAnonymous]
         // =====================================================
         var endpoint = context.ActionDescriptor.EndpointMetadata;
 
@@ -46,7 +38,7 @@ public class PermissionFilter : IAsyncActionFilter
 
         if (user?.Identity?.IsAuthenticated != true)
         {
-            context.Result = new UnauthorizedResult();
+            SetApiJsonResult(context, 401, "Unauthorized");
             return;
         }
 
@@ -54,7 +46,7 @@ public class PermissionFilter : IAsyncActionFilter
 
         if (string.IsNullOrEmpty(userIdClaim))
         {
-            context.Result = new UnauthorizedResult();
+            SetApiJsonResult(context, 401, "Unauthorized");
             return;
         }
 
@@ -63,14 +55,29 @@ public class PermissionFilter : IAsyncActionFilter
         // =====================================================
         // 3. BUILD PERMISSION FROM ROUTE
         // =====================================================
-        var controller = context.ActionDescriptor.RouteValues["controller"];
-        var action = context.ActionDescriptor.RouteValues["action"];
+        var controller = context.ActionDescriptor.RouteValues["controller"] ?? "";
+        var action = context.ActionDescriptor.RouteValues["action"] ?? "";
 
         if (string.IsNullOrEmpty(controller) || string.IsNullOrEmpty(action))
         {
             await next();
             return;
         }
+
+        // Strip "Api" suffix so "RoleApi" -> "Roles" for permission matching
+        if (controller.EndsWith("Api", StringComparison.OrdinalIgnoreCase))
+        {
+            controller = controller[..^3];
+        }
+
+        // Map API action names to MVC permission names
+        action = action switch
+        {
+            "GetAll" => "Index",
+            "Get" => "Details",
+            "Update" => "Edit",
+            _ => action
+        };
 
         var permission = $"{controller}.{action}";
 
@@ -84,7 +91,7 @@ public class PermissionFilter : IAsyncActionFilter
 
         if (!hasPermission)
         {
-            context.Result = new ForbidResult();
+            SetApiJsonResult(context, 403, "Forbidden");
             return;
         }
 
@@ -92,5 +99,24 @@ public class PermissionFilter : IAsyncActionFilter
         // 5. ALLOW REQUEST
         // =====================================================
         await next();
+    }
+
+    private static void SetApiJsonResult(ActionExecutingContext context, int statusCode, string message)
+    {
+        var isApi = context.HttpContext.Request.Path.StartsWithSegments("/api");
+        if (isApi)
+        {
+            var json = JsonSerializer.Serialize(new { success = false, message });
+            context.Result = new ContentResult
+            {
+                StatusCode = statusCode,
+                Content = json,
+                ContentType = "application/json"
+            };
+        }
+        else
+        {
+            context.Result = statusCode == 401 ? new UnauthorizedResult() : new ForbidResult();
+        }
     }
 }

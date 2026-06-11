@@ -95,6 +95,7 @@ public class AuthApiController : ControllerBase
 
 
     [HttpPost("register")]
+    [AllowAnonymous]
     public async Task<IActionResult> Register(RegisterRequest req)
     {
         try
