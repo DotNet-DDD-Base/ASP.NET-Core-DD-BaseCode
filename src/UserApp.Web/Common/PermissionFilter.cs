@@ -20,7 +20,16 @@ public class PermissionFilter : IAsyncActionFilter
         ActionExecutionDelegate next)
     {
         // =====================================================
-        // 1. SKIP IF [AllowAnonymous]
+        // 1. SKIP API ROUTES (authenticated via JWT)
+        // =====================================================
+        if (context.HttpContext.Request.Path.StartsWithSegments("/api"))
+        {
+            await next();
+            return;
+        }
+
+        // =====================================================
+        // 2. SKIP IF [AllowAnonymous]
         // =====================================================
         var endpoint = context.ActionDescriptor.EndpointMetadata;
 

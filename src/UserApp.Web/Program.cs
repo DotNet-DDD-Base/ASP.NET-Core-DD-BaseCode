@@ -51,11 +51,6 @@ using UserApp.Application.Permissions;
 var builder = WebApplication.CreateBuilder(args);
 
 // ------------------------------------------------
-// MVC (Controllers + Views + API)
-// ------------------------------------------------
-builder.Services.AddControllersWithViews();
-
-// ------------------------------------------------
 // Infrastructure (DbContext)
 // ------------------------------------------------
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -123,6 +118,9 @@ builder.Services.AddControllersWithViews(options =>
     options.Filters.AddService<PermissionFilter>();
 });
 
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "THIS_IS_DEMO_SECRET_KEY_123456";
+var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
+
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -130,33 +128,21 @@ builder.Services
         options.LoginPath = "/Auth/Login";
         options.AccessDeniedPath = "/Auth/Denied";
         options.ExpireTimeSpan = TimeSpan.FromHours(2);
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+            RoleClaimType = ClaimTypes.Role
+        };
     });
-
-builder.Services.AddAuthorization();
-// ------------------------------------------------
-// JWT AUTHENTICATION (IMPORTANT FIX)
-// ------------------------------------------------
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "THIS_IS_DEMO_SECRET_KEY_123456";
-var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
-
-// builder.Services
-//     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-//     .AddJwtBearer(options =>
-//     {
-//         options.TokenValidationParameters = new TokenValidationParameters
-//         {
-//             ValidateIssuer = true,
-//             ValidateAudience = true,
-//             ValidateLifetime = true,
-//             ValidateIssuerSigningKey = true,
-
-//             ValidIssuer = builder.Configuration["Jwt:Issuer"],
-//             ValidAudience = builder.Configuration["Jwt:Audience"],
-//             IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
-
-//             RoleClaimType = ClaimTypes.Role
-//         };
-//     });
 
 builder.Services.AddAuthorization();
 
@@ -172,13 +158,6 @@ builder.Services.AddCors(options =>
                                 .AllowAnyMethod();
                       });
 });
-
-// ------------------------------------------------
-// MVC (Controllers + Views + API)
-// ------------------------------------------------
-builder.Services.AddControllersWithViews();
-
-// ... (rest of your service registrations)
 
 var app = builder.Build();
 

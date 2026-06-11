@@ -6,6 +6,8 @@ using System.Security.Claims;
 using System.Text;
 using UserApp.Application.Users.Interfaces;
 using UserApp.Application.Common;
+using UserApp.Domain.Common;
+using UserApp.Domain.Roles;
 using UserApp.Domain.Users;
 
 namespace UserApp.Web.Controllers.Api;
@@ -17,15 +19,21 @@ public class AuthApiController : ControllerBase
     private readonly IUserService _userService;
     private readonly IAuthService _authService;
     private readonly IConfiguration _config;
+    private readonly IBaseRepository<UserRole> _userRoleRepo;
+    private readonly IBaseRepository<Role> _roleRepo;
 
     public AuthApiController(
         IUserService userService,
         IAuthService authService,
-        IConfiguration config)
+        IConfiguration config,
+        IBaseRepository<UserRole> userRoleRepo,
+        IBaseRepository<Role> roleRepo)
     {
         _userService = userService;
         _authService = authService;
         _config = config;
+        _userRoleRepo = userRoleRepo;
+        _roleRepo = roleRepo;
     }
 
     // ---------------- LOGIN ----------------
@@ -49,7 +57,7 @@ public class AuthApiController : ControllerBase
                 });
             }
 
-            var accessToken = GenerateToken(user);
+            var accessToken = await GenerateToken(user);
 
             var refreshToken =
                 await _authService.CreateRefreshTokenAsync(user.Id);
@@ -130,7 +138,7 @@ public class AuthApiController : ControllerBase
 
         var user = await _userService.GetByIdAsync(storedToken.UserId);
 
-        var newAccessToken = GenerateToken(user);
+        var newAccessToken = await GenerateToken(user);
 
         return Ok(ApiResponse<object>.Ok(new
         {
@@ -148,17 +156,32 @@ public class AuthApiController : ControllerBase
     }
 
     // ---------------- JWT GENERATION ----------------
-    // Inside AuthController.cs -> GenerateToken
-    private string GenerateToken(User user)
+    private async Task<string> GenerateToken(User user)
     {
         var key = Encoding.UTF8.GetBytes(_config["Jwt:Key"]!);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-        new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-        new Claim(JwtRegisteredClaimNames.Email, user.Email.Value ?? user.Email.ToString()),
-        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-    };
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Email, user.Email.Value ?? user.Email.ToString()),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        var allUserRoles = await _userRoleRepo.ListAsync(0, 1000);
+        var assignedRoleIds = allUserRoles
+            .Where(ur => ur.UserId == user.Id)
+            .Select(ur => ur.RoleId)
+            .ToList();
+
+        foreach (var roleId in assignedRoleIds)
+        {
+            var role = await _roleRepo.GetByIdAsync(roleId);
+            if (role != null)
+            {
+                claims.Add(new(ClaimTypes.Role, role.Name));
+            }
+        }
 
         var token = new JwtSecurityToken(
             issuer: _config["Jwt:Issuer"],

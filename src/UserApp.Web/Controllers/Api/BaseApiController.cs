@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UserApp.Application.Common;
@@ -8,7 +9,7 @@ namespace UserApp.Web.Controllers.Api;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public abstract class BaseApiController<TEntity, TViewModel> : ControllerBase
     where TEntity : Entity<Guid>
     where TViewModel : class
