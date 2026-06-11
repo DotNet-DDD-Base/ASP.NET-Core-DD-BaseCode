@@ -10,6 +10,9 @@ public class Role : Entity<Guid>
     private readonly List<UserRole> _userRoles = new();
     public IReadOnlyCollection<UserRole> UserRoles => _userRoles;
 
+    private readonly List<RolePermission> _rolePermissions = new();
+    public IReadOnlyCollection<RolePermission> RolePermissions => _rolePermissions;
+
     private Role() { }
 
     public static Role Create(string name)
@@ -23,5 +26,15 @@ public class Role : Entity<Guid>
             Name = name.Trim(),
             CreatedAt = DateTime.UtcNow
         };
+    }
+
+    // Add this domain method for the Update CRUD operation
+    public void UpdateName(string newName)
+    {
+        if (string.IsNullOrWhiteSpace(newName))
+            throw new ArgumentException("Role name cannot be empty");
+
+        Name = newName.Trim();
+        UpdatedAt = DateTime.UtcNow;
     }
 }

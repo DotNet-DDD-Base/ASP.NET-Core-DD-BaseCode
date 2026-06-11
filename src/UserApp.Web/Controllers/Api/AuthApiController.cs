@@ -12,13 +12,13 @@ namespace UserApp.Web.Controllers.Api;
 
 [Route("api/auth")]
 [ApiController]
-public class AuthController : ControllerBase
+public class AuthApiController : ControllerBase
 {
     private readonly IUserService _userService;
     private readonly IAuthService _authService;
     private readonly IConfiguration _config;
 
-    public AuthController(
+    public AuthApiController(
         IUserService userService,
         IAuthService authService,
         IConfiguration config)
@@ -33,53 +33,53 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Login(LoginRequest req)
     {
-    try
-    {
-    var user = await _userService.ValidateUserAsync(
-    req.Email,
-    req.Password
-    );
-        if (user == null)
+        try
         {
-            return Unauthorized(new ApiResponse<object>
+            var user = await _userService.ValidateUserAsync(
+            req.Email,
+            req.Password
+            );
+            if (user == null)
             {
-                Success = false,
-                Message = "Invalid credentials.",
-                Data = new { field = "credentials" }
+                return Unauthorized(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Invalid credentials.",
+                    Data = new { field = "credentials" }
+                });
+            }
+
+            var accessToken = GenerateToken(user);
+
+            var refreshToken =
+                await _authService.CreateRefreshTokenAsync(user.Id);
+
+            return Ok(new ApiResponse<object>
+            {
+                Success = true,
+                Message = "Login successful",
+                Data = new
+                {
+                    access_token = accessToken,
+                    refresh_token = refreshToken.Token,
+                    user = new
+                    {
+                        id = user.Id,
+                        email = user.Email.Value,
+                        fullName = user.FullName
+                    }
+                }
             });
         }
-
-        var accessToken = GenerateToken(user);
-
-        var refreshToken =
-            await _authService.CreateRefreshTokenAsync(user.Id);
-
-        return Ok(new ApiResponse<object>
+        catch (Exception ex)
         {
-            Success = true,
-            Message = "Login successful",
-            Data = new
+            return StatusCode(500, new ApiResponse<object>
             {
-                access_token = accessToken,
-                refresh_token = refreshToken.Token,
-                user = new
-                {
-                    id = user.Id,
-                    email = user.Email.Value,
-                    fullName = user.FullName
-                }
-            }
-        });
-    }
-    catch (Exception ex)
-    {
-        return StatusCode(500, new ApiResponse<object>
-        {
-            Success = false,
-            Message = ex.Message,
-            Data = null
-        });
-    }
+                Success = false,
+                Message = ex.Message,
+                Data = null
+            });
+        }
 
     }
 

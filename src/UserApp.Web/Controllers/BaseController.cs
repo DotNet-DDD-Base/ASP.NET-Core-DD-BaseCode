@@ -6,6 +6,7 @@ using UserApp.Application.Common.Interfaces;
 using UserApp.Application.Common.Media;
 using UserApp.Web.Common;
 using UserApp.Web.ViewModels;
+using System.Security.Claims;
 
 namespace UserApp.Web.Controllers;
 
@@ -17,17 +18,20 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
     protected readonly IMapper _mapper;
     protected readonly IMediaService? _mediaService;
 
+    protected readonly IPermissionChecker? _permissionService;
     private IMediaService? MediaService =>
         _mediaService ?? HttpContext?.RequestServices.GetService<IMediaService>();
 
     protected BaseController(
         IBaseService<TEntity> service,
         IMapper mapper,
-        IMediaService? mediaService = null)
+        IMediaService? mediaService = null,
+        IPermissionChecker? permissionService = null)
     {
         _service = service;
         _mapper = mapper;
         _mediaService = mediaService;
+        _permissionService = permissionService;
     }
 
     private async Task LoadImageUrls(object vm, Guid? entityId = null)
@@ -191,5 +195,19 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
         }
 
         return ModelState.IsValid;
+    }
+
+    protected async Task<bool> HasPermission(string permission)
+    {
+        if (_permissionService == null)
+            return true; // or false depending on security policy
+
+        var userId = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return false;
+
+        return await _permissionService.HasPermissionAsync(
+            Guid.Parse(userId),
+            permission
+        );
     }
 }

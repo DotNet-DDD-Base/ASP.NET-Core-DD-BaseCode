@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace UserApp.Web.Controllers;
 
-    [Authorize(Roles = "Admin")]
+
 public class UsersController : BaseController<User, UserViewModel>
 {
     public UsersController(IUserService service, IMapper mapper)

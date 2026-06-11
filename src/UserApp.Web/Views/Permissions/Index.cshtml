@@ -1,0 +1,126 @@
+@model UserApp.Web.ViewModels.ListViewModel<UserApp.Web.ViewModels.Permissions.PermissionViewModel>
+
+<div class="animate-fade-in space-y-6">
+    <div class="flex items-center justify-between mb-2">
+        <div>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">System Permissions</h1>
+            <p class="text-slate-500 text-sm mt-1">Manage core authorization vectors and assembly signatures</p>
+        </div>
+        <a asp-action="Create"
+           class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all duration-200 hover:-translate-y-0.5">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Create Permission
+        </a>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        
+        @if (!Model.Items.Any())
+        {
+            <div class="text-center py-16">
+                <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+                <p class="text-slate-500 font-medium">No permissions found</p>
+                <p class="text-slate-400 text-sm mt-1">Register a system permission security token signature key to get started.</p>
+            </div>
+        }
+        else
+        {
+            @* Extract and sort groups logically *@
+            var groupedPermissions = Model.Items
+                .GroupBy(p => p.Name.Split('.')[0].Split(' ')[0]) 
+                .OrderBy(g => g.Key)
+                .ToList();
+
+            for (int i = 0; i < groupedPermissions.Count; i++)
+            {
+                var group = groupedPermissions[i];
+
+                @if (i > 0)
+                {
+                    <div class="border-t-2 border-dashed border-slate-100 my-2"></div>
+                }
+
+                <div class="bg-slate-50/60 px-6 py-3 flex items-center justify-between border-b border-slate-100">
+                    <div class="flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                        <h2 class="text-xs font-black text-slate-600 uppercase tracking-wider">@group.Key Operations</h2>
+                    </div>
+                    <span class="text-[11px] font-bold text-slate-400">
+                        @group.Count() Items
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <tbody class="divide-y divide-slate-100">
+                            @foreach (var p in group.OrderBy(p => p.Name))
+                            {
+                                <tr class="hover:bg-indigo-50/30 transition-colors duration-150 group">
+                                    <td class="px-6 py-4 whitespace-nowrap w-1/4">
+                                        <span class="font-semibold text-slate-800 text-sm">@p.Name</span>
+                                    </td>
+                                    <td class="px-6 py-4 text-right whitespace-nowrap w-1/4">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <a asp-action="Edit" asp-route-id="@p.Id"
+                                               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                </svg>
+                                                Edit
+                                            </a>
+                                            <form asp-action="Delete" asp-route-id="@p.Id" method="post" style="display:inline" onsubmit="return confirm('Are you sure you want to permanently delete this permission flag?');">
+                                                <button type="submit"
+                                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                    </svg>
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        }
+    </div>
+
+    @if (Model.TotalCount > Model.PageSize)
+    {
+        <div class="flex items-center justify-between mt-6 pt-2">
+            <p class="text-sm text-slate-500">
+                Showing <span class="font-bold">@((Model.Page - 1) * Model.PageSize + 1)</span>
+                to <span class="font-bold">@Math.Min(Model.Page * Model.PageSize, Model.TotalCount)</span>
+                of <span class="font-bold">@Model.TotalCount</span> total rules
+            </p>
+            <div class="flex gap-2">
+                @if (Model.Page > 1)
+                {
+                    <a asp-action="Index" asp-route-page="@(Model.Page - 1)" asp-route-size="@Model.PageSize"
+                       class="px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
+                        Previous
+                    </a>
+                }
+                @if (Model.Page * Model.PageSize < Model.TotalCount)
+                {
+                    <a asp-action="Index" asp-route-page="@(Model.Page + 1)" asp-route-size="@Model.PageSize"
+                       class="px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors shadow-sm">
+                        Next
+                    </a>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+    @@keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+</style>

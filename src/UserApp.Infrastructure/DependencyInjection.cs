@@ -10,6 +10,7 @@ using UserApp.Infrastructure.Persistence.Repositories;
 using UserApp.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Builder;
+using UserApp.Domain.Roles;
 
 namespace UserApp.Infrastructure;
 
@@ -26,6 +27,8 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
         services.AddScoped<UserService>();
+        // Inside your Infrastructure's service registration method
+        services.AddScoped<IPermissionRepository, PermissionRepository>();
         return services;
     }
 

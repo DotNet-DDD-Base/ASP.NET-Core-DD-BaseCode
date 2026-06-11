@@ -25,6 +25,9 @@ public class AppDbContext : DbContext
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
 
+    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+
     // ================= AUTO DBSets =================
     // <AUTO-DBSETS-START>
     public DbSet<Pap> Paps => Set<Pap>();
@@ -55,5 +58,18 @@ public class AppDbContext : DbContext
             .HasOne(x => x.Role)
             .WithMany(x => x.UserRoles)
             .HasForeignKey(x => x.RoleId);
+
+        modelBuilder.Entity<RolePermission>()
+    .HasKey(x => new { x.RoleId, x.PermissionId });
+
+        modelBuilder.Entity<RolePermission>()
+            .HasOne(x => x.Role)
+            .WithMany(x => x.RolePermissions)
+            .HasForeignKey(x => x.RoleId);
+
+        modelBuilder.Entity<RolePermission>()
+            .HasOne(x => x.Permission)
+            .WithMany(x => x.RolePermissions)
+            .HasForeignKey(x => x.PermissionId);
     }
 }

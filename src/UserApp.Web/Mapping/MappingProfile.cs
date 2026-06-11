@@ -6,6 +6,9 @@ using UserApp.Domain.Paps;
 using UserApp.Domain.Milks;
 using UserApp.Domain.Ais;
 using UserApp.Domain.Cocos;
+using UserApp.Web.ViewModels.Roles;
+using UserApp.Domain.Roles;
+using UserApp.Web.ViewModels.Permissions;
 
 
 namespace UserApp.Web.Mapping;
@@ -17,6 +20,12 @@ public class MappingProfile : Profile
         // ==================== USER MAPPINGS ====================
         CreateMap<User, UserDto>();
         CreateMap<User, UserViewModel>();
+
+        CreateMap<Role, RoleViewModel>()
+            .ReverseMap();
+
+        CreateMap<Permission, PermissionViewModel>()
+                    .ReverseMap();
 
         CreateMap<UserDto, User>()
             .ForMember(dest => dest.Id, opt => opt.Ignore());
@@ -39,6 +48,10 @@ public class MappingProfile : Profile
         CreateMap<Coco, CocoViewModel>();
         CreateMap<CocoViewModel, Coco>();
         // <AUTO-MAPPINGS-END>
+        CreateMap<RoleViewModel, Role>();
+        CreateMap<PermissionViewModel, Permission>();
+
+
 
     }
 }

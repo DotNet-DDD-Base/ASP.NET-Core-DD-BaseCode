@@ -127,4 +127,9 @@ public class AuthService : IAuthService
             await _refreshTokenRepository.SaveAsync();
         }
     }
+
+    public async Task<User?> GetUserByEmailAsync(string email)
+    {
+        return await _userRepository.GetByEmailAsync(email);
+    }
 }

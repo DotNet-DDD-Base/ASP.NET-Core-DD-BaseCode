@@ -12,4 +12,5 @@ public interface IAuthService
     Task<RefreshToken> CreateRefreshTokenAsync(Guid userId);
     Task<RefreshToken?> GetRefreshTokenAsync(string token);
     Task RevokeRefreshTokenAsync(string token);
+    Task<User?> GetUserByEmailAsync(string email);
 }

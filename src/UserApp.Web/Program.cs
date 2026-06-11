@@ -9,6 +9,7 @@ using UserApp.Domain.Common;
 using UserApp.Domain.Users;
 using UserApp.Application.Common;
 using UserApp.Application.Users.Interfaces;
+
 using UserApp.Application.Users;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -34,7 +35,13 @@ using UserApp.Application.Cocos.Interfaces;
 using UserApp.Domain.Roles;
 using UserApp.Infrastructure.Persistence.Repositories;
 using System.Security.Claims;
-
+using UserApp.Infrastructure.Security;
+using UserApp.Web.Common;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using UserApp.Application.Roles.Interfaces;
+using UserApp.Application.Roles;
+using UserApp.Application.Permissions.Interfaces;
+using UserApp.Application.Permissions;
 
 // ================= AUTO MODULE IMPORTS =================
 // <AUTO-USINGS-START>
@@ -97,8 +104,11 @@ builder.Services.AddScoped<ICocoService, CocoService>();
 // <AUTO-SERVICES-END>
 
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IMediaService, MediaService>();
+builder.Services.AddScoped<IPermissionService, PermissionService>();
+builder.Services.AddScoped<IPermissionChecker, PermissionChecker>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<
     UserApp.Application.Common.Interfaces.IModuleGeneratorService,
@@ -107,30 +117,46 @@ builder.Services.AddScoped<MediaStorage>();
 builder.Services.AddScoped<IMediaPipeline, MediaPipeline>();
 
 
+builder.Services.AddScoped<PermissionFilter>();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.AddService<PermissionFilter>();
+});
+
+builder.Services
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Auth/Login";
+        options.AccessDeniedPath = "/Auth/Denied";
+        options.ExpireTimeSpan = TimeSpan.FromHours(2);
+    });
+
+builder.Services.AddAuthorization();
 // ------------------------------------------------
 // JWT AUTHENTICATION (IMPORTANT FIX)
 // ------------------------------------------------
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "THIS_IS_DEMO_SECRET_KEY_123456";
 var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
 
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
+// builder.Services
+//     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+//     .AddJwtBearer(options =>
+//     {
+//         options.TokenValidationParameters = new TokenValidationParameters
+//         {
+//             ValidateIssuer = true,
+//             ValidateAudience = true,
+//             ValidateLifetime = true,
+//             ValidateIssuerSigningKey = true,
 
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+//             ValidIssuer = builder.Configuration["Jwt:Issuer"],
+//             ValidAudience = builder.Configuration["Jwt:Audience"],
+//             IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
 
-            RoleClaimType = ClaimTypes.Role 
-        };
-    });
+//             RoleClaimType = ClaimTypes.Role
+//         };
+//     });
 
 builder.Services.AddAuthorization();
 
@@ -155,6 +181,17 @@ builder.Services.AddControllersWithViews();
 // ... (rest of your service registrations)
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    await db.Database.MigrateAsync();
+    await UserApp.Infrastructure.Persistence.Seed.RbacSeeder.SeedRolesAsync(db);
+    await UserApp.Infrastructure.Persistence.Seed.RbacSeeder.SeedPermissionsAsync(db);
+    await UserApp.Infrastructure.Persistence.Seed.RbacSeeder.SeedAdminRolePermissionsAsync(db);
+}
+
 await app.InitializeDatabaseAsync();
 
 // ... (database migrations and environments check)
