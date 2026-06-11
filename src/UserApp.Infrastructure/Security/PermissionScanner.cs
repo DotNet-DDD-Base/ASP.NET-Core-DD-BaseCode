@@ -19,7 +19,7 @@ public static class PermissionScanner
         {
             var controllerName = controller.Name.Replace("Controller", "");
 
-            var actions = GetCrudActions(controller);
+            var actions = GetActionMethods(controller);
 
             foreach (var action in actions)
             {
@@ -30,35 +30,14 @@ public static class PermissionScanner
         return permissions.Distinct().OrderBy(x => x).ToList();
     }
 
-    private static List<string> GetCrudActions(Type controller)
+    private static List<string> GetActionMethods(Type controller)
     {
-        var actions = new HashSet<string>();
+        var baseControllerType = typeof(Controller);
 
-        var methods = controller.GetMethods(
-            BindingFlags.Public |
-            BindingFlags.Instance);
-
-        foreach (var method in methods)
-        {
-            if (method.IsSpecialName)
-                continue;
-
-            if (method.DeclaringType == typeof(object))
-                continue;
-
-            switch (method.Name)
-            {
-                case "Index":
-                case "Details":
-                case "Create":
-                case "Edit":
-                case "Delete":
-                case "DeleteConfirmed":
-                    actions.Add(method.Name);
-                    break;
-            }
-        }
-
-        return actions.ToList();
+        return controller.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Where(m => !m.IsSpecialName)
+            .Select(m => m.Name)
+            .Distinct()
+            .ToList();
     }
 }

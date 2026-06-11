@@ -1,0 +1,137 @@
+@model UserApp.Web.ViewModels.Roles.RolePermissionAssignmentViewModel
+
+<div class="animate-fade-in">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">@Model.RoleName — Permissions</h1>
+            <p class="text-slate-500 text-sm mt-1">Assign or revoke permission access for this role</p>
+        </div>
+        <a asp-action="Index"
+           class="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl shadow-sm transition-all duration-200">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Back
+        </a>
+    </div>
+
+    @if (TempData["Success"] is string msg)
+    {
+        <div class="mb-6 px-5 py-3 bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold text-sm rounded-xl flex items-center gap-2">
+            <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            @msg
+        </div>
+    }
+
+    <form method="post" asp-action="ManagePermissions">
+        <input type="hidden" name="roleId" value="@Model.RoleId"/>
+
+        @{
+            var groups = Model.Permissions
+                .GroupBy(p =>
+                {
+                    var dot = p.PermissionName.IndexOf('.');
+                    return dot > 0 ? p.PermissionName[..dot] : "Other";
+                })
+                .OrderBy(g => g.Key);
+        }
+
+        <div class="grid gap-6">
+            @foreach (var group in groups)
+            {
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden module-group-card">
+                    <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                        <h2 class="text-sm font-bold text-slate-600 uppercase tracking-wider">@group.Key Operations</h2>
+                        
+                        <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" 
+                                   class="select-all-toggle w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-shadow cursor-pointer"/>
+                            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider hover:text-indigo-700">Select All</span>
+                        </label>
+                    </div>
+                    
+                    <div class="px-6 py-3 divide-y divide-slate-100">
+                        @foreach (var perm in group.OrderBy(p => p.PermissionName))
+                        {
+                            <label class="flex items-center gap-3 py-2.5 cursor-pointer group">
+                                <input type="checkbox" name="permissionIds" value="@perm.PermissionId"
+                                       checked="@perm.IsAssigned"
+                                       class="permission-checkbox w-4.5 h-4.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 focus:ring-2 transition-shadow cursor-pointer"/>
+                                <span class="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors">
+                                    @{
+                                        var dot = perm.PermissionName.IndexOf('.');
+                                        var actionName = dot > 0 ? perm.PermissionName[(dot + 1)..] : perm.PermissionName;
+                                    }
+                                    @actionName
+                                </span>
+                                <span class="text-xs text-slate-400 ml-auto font-mono">@perm.PermissionName</span>
+                            </label>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="mt-8 flex items-center gap-3">
+            <button type="submit"
+                    class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all duration-200 hover:-translate-y-0.5">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Save Permissions
+            </button>
+            <a asp-action="Index"
+               class="inline-flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl shadow-sm transition-all duration-200">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out;
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const cards = document.querySelectorAll('.module-group-card');
+
+        cards.forEach(card => {
+            const selectAllToggle = card.querySelector('.select-all-toggle');
+            const itemCheckboxes = card.querySelectorAll('.permission-checkbox');
+
+            // Function to update the Master "Select All" checkbox state based on items
+            const updateMasterState = () => {
+                const total = itemCheckboxes.length;
+                const checkedCount = card.querySelectorAll('.permission-checkbox:checked').length;
+                
+                selectAllToggle.checked = (total === checkedCount);
+                // Indeterminate visual state for mixed selections
+                selectAllToggle.indeterminate = (checkedCount > 0 && checkedCount < total);
+            };
+
+            // Initialize state on page load
+            updateMasterState();
+
+            // Toggle all inputs when "Select All" undergoes interaction
+            selectAllToggle.addEventListener('change', function () {
+                itemCheckboxes.forEach(cb => {
+                    cb.checked = selectAllToggle.checked;
+                });
+            });
+
+            // Update master state if single components are toggled
+            itemCheckboxes.forEach(cb => {
+                cb.addEventListener('change', updateMasterState);
+            });
+        });
+    });
+</script>
