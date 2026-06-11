@@ -30,14 +30,14 @@ public class MappingProfile : Profile
 
 
 
-CreateMap<Pap, PapViewModel>();
-CreateMap<PapViewModel, Pap>();
-CreateMap<Milk, MilkViewModel>();
-CreateMap<MilkViewModel, Milk>();
-CreateMap<Ai, AiViewModel>();
-CreateMap<AiViewModel, Ai>();
-CreateMap<Coco, CocoViewModel>();
-CreateMap<CocoViewModel, Coco>();
+        CreateMap<Pap, PapViewModel>();
+        CreateMap<PapViewModel, Pap>();
+        CreateMap<Milk, MilkViewModel>();
+        CreateMap<MilkViewModel, Milk>();
+        CreateMap<Ai, AiViewModel>();
+        CreateMap<AiViewModel, Ai>();
+        CreateMap<Coco, CocoViewModel>();
+        CreateMap<CocoViewModel, Coco>();
         // <AUTO-MAPPINGS-END>
 
     }
