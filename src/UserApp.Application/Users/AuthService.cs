@@ -2,6 +2,8 @@ using UserApp.Application.Users.DTOs;
 using UserApp.Application.Users.Interfaces;
 using UserApp.Domain.Users;
 using UserApp.Domain.Common;
+using UserApp.Domain.Roles;
+
 
 namespace UserApp.Application.Users;
 
@@ -11,17 +13,23 @@ public class AuthService : IAuthService
     private readonly IBaseRepository<User> _baseRepository;
     private readonly IPasswordHasher _hasher;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
+    private readonly IRoleRepository _roleRepository;
+    private readonly IUserRoleRepository _userRoleRepository;
 
     public AuthService(
-        IUserRepository userRepository,
-        IBaseRepository<User> baseRepository,
-        IPasswordHasher hasher,
-        IRefreshTokenRepository refreshTokenRepository)
+    IUserRepository userRepository,
+    IBaseRepository<User> baseRepository,
+    IPasswordHasher hasher,
+    IRefreshTokenRepository refreshTokenRepository,
+    IRoleRepository roleRepository,
+    IUserRoleRepository userRoleRepository)
     {
         _userRepository = userRepository;
         _baseRepository = baseRepository;
         _hasher = hasher;
         _refreshTokenRepository = refreshTokenRepository;
+        _roleRepository = roleRepository;
+        _userRoleRepository = userRoleRepository;
     }
 
     // ---------------- REGISTER ----------------
@@ -35,8 +43,24 @@ public class AuthService : IAuthService
 
         var user = User.Create(email, dto.FullName, _hasher.Hash(dto.Password));
 
+        // 1. Save user first
         await _baseRepository.AddAsync(user);
         await _baseRepository.SaveChangesAsync();
+
+        // 2. Get default "User" role
+        var role = await _roleRepository.GetByNameAsync("User");
+        if (role == null)
+            throw new Exception("Default role 'User' not found");
+
+        // 3. Assign role (pivot table)
+        var userRole = new UserRole
+        {
+            UserId = user.Id,
+            RoleId = role.Id
+        };
+
+        await _userRoleRepository.AddAsync(userRole);
+        await _userRoleRepository.SaveAsync();
 
         return new AuthResponseDto(
             AccessToken: "NO_LOGIN_TOKEN",

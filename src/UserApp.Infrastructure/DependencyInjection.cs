@@ -7,6 +7,9 @@ using UserApp.Domain.Users;
 using UserApp.Infrastructure.Identity;
 using UserApp.Infrastructure.Persistence;
 using UserApp.Infrastructure.Persistence.Repositories;
+using UserApp.Infrastructure.Persistence.Seed;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Builder;
 
 namespace UserApp.Infrastructure;
 
@@ -24,5 +27,16 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
         services.AddScoped<UserService>();
         return services;
+    }
+
+    public static async Task InitializeDatabaseAsync(this IApplicationBuilder app)
+    {
+        using var scope = app.ApplicationServices.CreateScope();
+
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        await db.Database.MigrateAsync();
+
+        await RbacSeeder.SeedRolesAsync(db);
     }
 }

@@ -6,6 +6,7 @@ using UserApp.Domain.Paps;
 using UserApp.Domain.Milks;
 using UserApp.Domain.Ais;
 using UserApp.Domain.Cocos;
+using UserApp.Domain.Roles;
 
 
 namespace UserApp.Infrastructure.Persistence;
@@ -21,13 +22,15 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<MediaEntity> Media => Set<MediaEntity>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<UserRole> UserRoles => Set<UserRole>();
 
     // ================= AUTO DBSets =================
     // <AUTO-DBSETS-START>
     public DbSet<Pap> Paps => Set<Pap>();
     public DbSet<Milk> Milks => Set<Milk>();
     public DbSet<Ai> Ais => Set<Ai>();
-public DbSet<Coco> Cocos => Set<Coco>();
+    public DbSet<Coco> Cocos => Set<Coco>();
     // <AUTO-DBSETS-END>
 
 
@@ -40,8 +43,17 @@ public DbSet<Coco> Cocos => Set<Coco>();
 
         modelBuilder.ApplyConfiguration(new UserConfiguration());
 
-        // (Optional future configs)
-        // modelBuilder.ApplyConfiguration(new ProductConfiguration());
-        // modelBuilder.ApplyConfiguration(new PaymentConfiguration());
+        modelBuilder.Entity<UserRole>()
+            .HasKey(x => new { x.UserId, x.RoleId });
+
+        modelBuilder.Entity<UserRole>()
+            .HasOne(x => x.User)
+            .WithMany(x => x.UserRoles)
+            .HasForeignKey(x => x.UserId);
+
+        modelBuilder.Entity<UserRole>()
+            .HasOne(x => x.Role)
+            .WithMany(x => x.UserRoles)
+            .HasForeignKey(x => x.RoleId);
     }
 }

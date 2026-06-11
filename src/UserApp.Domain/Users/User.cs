@@ -1,4 +1,5 @@
 using UserApp.Domain.Common;
+using UserApp.Domain.Roles;
 
 namespace UserApp.Domain.Users;
 
@@ -8,7 +9,8 @@ public class User : Entity<Guid>, IAggregateRoot
     public string FullName { get; private set; } = default!;
     public string PasswordHash { get; private set; } = default!;
     public UserStatus Status { get; private set; }
-
+    private readonly List<UserRole> _userRoles = new();
+    public IReadOnlyCollection<UserRole> UserRoles => _userRoles;
     private User() { }
 
     public static User Create(Email email, string fullName, string passwordHash)

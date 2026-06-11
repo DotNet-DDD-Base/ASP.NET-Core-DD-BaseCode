@@ -38,4 +38,10 @@ public class AuthController : Controller
         await _service.RegisterAsync(new RegisterDto(vm.Email, vm.FullName, vm.Password));
         return RedirectToAction("Login");
     }
+
+    public IActionResult Logout()
+{
+    HttpContext.Session.Clear(); // if you use session
+    return RedirectToAction("Login", "Auth");
+}
 }

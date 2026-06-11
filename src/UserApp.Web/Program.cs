@@ -31,6 +31,9 @@ using UserApp.Application.Ais.Interfaces;
 using UserApp.Domain.Cocos;
 using UserApp.Application.Cocos;
 using UserApp.Application.Cocos.Interfaces;
+using UserApp.Domain.Roles;
+using UserApp.Infrastructure.Persistence.Repositories;
+using System.Security.Claims;
 
 
 // ================= AUTO MODULE IMPORTS =================
@@ -74,9 +77,10 @@ builder.Services.AddScoped<IMilkRepository, MilkRepository>();
 builder.Services.AddScoped<IAiRepository, AiRepository>();
 builder.Services.AddScoped<ICocoRepository, CocoRepository>();
 // <AUTO-REPOSITORIES-END>
-
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IMediaRepository, MediaRepository>();
+builder.Services.AddScoped<IUserRoleRepository, UserRoleRepository>();
 
 
 // ------------------------------------------------
@@ -122,7 +126,9 @@ builder.Services
 
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(keyBytes)
+            IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+
+            RoleClaimType = ClaimTypes.Role 
         };
     });
 
@@ -149,6 +155,7 @@ builder.Services.AddControllersWithViews();
 // ... (rest of your service registrations)
 
 var app = builder.Build();
+await app.InitializeDatabaseAsync();
 
 // ... (database migrations and environments check)
 
