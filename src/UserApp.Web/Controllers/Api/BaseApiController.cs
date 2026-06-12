@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UserApp.Application.Common;
+using UserApp.Application.Common.Interfaces;
+using UserApp.Application.Common.Media;
 using UserApp.Domain.Common;
 
 namespace UserApp.Web.Controllers.Api;
@@ -16,11 +18,16 @@ public abstract class BaseApiController<TEntity, TViewModel> : ControllerBase
 {
     protected readonly IBaseService<TEntity> _service;
     protected readonly IMapper _mapper;
+    private readonly IMediaService? _mediaService;
 
-    protected BaseApiController(IBaseService<TEntity> service, IMapper mapper)
+    private IMediaService? MediaService =>
+        _mediaService ?? HttpContext?.RequestServices.GetService<IMediaService>();
+
+    protected BaseApiController(IBaseService<TEntity> service, IMapper mapper, IMediaService? mediaService = null)
     {
         _service = service;
         _mapper = mapper;
+        _mediaService = mediaService;
     }
 
     // ---------------- GET ALL ----------------
@@ -114,5 +121,74 @@ public abstract class BaseApiController<TEntity, TViewModel> : ControllerBase
         await _service.SaveAsync();
 
         return Ok(ApiResponse<object>.Ok(null, "Deleted successfully"));
+    }
+
+    // ---------------- MEDIA UPLOAD ----------------
+    [HttpPost("{id}/media")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    public async Task<ActionResult<ApiResponse<object>>> UploadMedia(Guid id, List<IFormFile> files)
+    {
+        var entity = await _service.GetByIdAsync(id);
+        if (entity == null)
+            return NotFound(ApiResponse<object>.Fail("Data not found"));
+
+        var ms = MediaService;
+        if (ms == null)
+            return BadRequest(ApiResponse<object>.Fail("Media upload not supported for this entity"));
+
+        foreach (var file in files)
+        {
+            if (file.Length == 0) continue;
+
+            using var mem = new MemoryStream();
+            await file.CopyToAsync(mem);
+
+            var input = new MediaFileInput
+            {
+                FileName = file.FileName,
+                ContentType = file.ContentType,
+                Data = mem.ToArray()
+            };
+
+            await ms.UploadAsync(typeof(TEntity).Name, id, input);
+        }
+
+        return Ok(ApiResponse<object>.Ok(null, "Media uploaded successfully"));
+    }
+
+    // ---------------- GET MEDIA ----------------
+    [HttpGet("{id}/media")]
+    public async Task<ActionResult<ApiResponse<List<object>>>> GetMedia(Guid id)
+    {
+        var entity = await _service.GetByIdAsync(id);
+        if (entity == null)
+            return NotFound(ApiResponse<object>.Fail("Data not found"));
+
+        var ms = MediaService;
+        if (ms == null)
+            return Ok(ApiResponse<List<object>>.Ok(new List<object>(), "No media support"));
+
+        var mediaList = await ms.GetAsync(typeof(TEntity).Name, id);
+
+        return Ok(ApiResponse<List<object>>.Ok(
+            mediaList.Select(m => new { m.Id, m.Url, m.OriginalName } as object).ToList(),
+            "Media retrieved successfully"));
+    }
+
+    // ---------------- DELETE MEDIA ----------------
+    [HttpDelete("{id}/media/{mediaId}")]
+    public async Task<ActionResult<ApiResponse<object>>> DeleteMedia(Guid id, Guid mediaId)
+    {
+        var entity = await _service.GetByIdAsync(id);
+        if (entity == null)
+            return NotFound(ApiResponse<object>.Fail("Data not found"));
+
+        var ms = MediaService;
+        if (ms == null)
+            return BadRequest(ApiResponse<object>.Fail("Media upload not supported for this entity"));
+
+        await ms.DeleteAsync(mediaId);
+
+        return Ok(ApiResponse<object>.Ok(null, "Media deleted successfully"));
     }
 }
