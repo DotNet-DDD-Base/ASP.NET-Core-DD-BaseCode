@@ -26,6 +26,31 @@ public class RolesApiController : BaseApiController<Role, RoleViewModel>
         _rpRepo = rpRepo;
     }
 
+    [HttpGet("{id}/permissions")]
+    [ActionName(nameof(ManagePermissions))]
+    public async Task<ActionResult<ApiResponse<object>>> GetPermissions(Guid id)
+    {
+        var role = await _service.GetByIdAsync(id);
+        if (role == null)
+            return NotFound(ApiResponse<object>.Fail("Role not found"));
+
+        var existing = await _rpRepo.ListAsync(0, 10000);
+
+        var permissionIds = existing
+            .Where(x => x.RoleId == id)
+            .Select(x => x.PermissionId)
+            .ToList();
+
+        return Ok(ApiResponse<object>.Ok(
+            new
+            {
+                roleId = id,
+                permissionIds
+            },
+            "Role permissions retrieved successfully"
+        ));
+    }
+
     [HttpPost("{id}/permissions")]
     public async Task<ActionResult<ApiResponse<object>>> ManagePermissions(Guid id, [FromBody] List<Guid> permissionIds)
     {
@@ -48,4 +73,5 @@ public class RolesApiController : BaseApiController<Role, RoleViewModel>
 
         return Ok(ApiResponse<object>.Ok(null, "Permissions updated successfully"));
     }
+    
 }
