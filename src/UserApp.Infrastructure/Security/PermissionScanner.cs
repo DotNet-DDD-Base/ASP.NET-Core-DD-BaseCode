@@ -18,6 +18,8 @@ public static class PermissionScanner
         foreach (var controller in controllers)
         {
             var controllerName = controller.Name.Replace("Controller", "");
+            if (controllerName.EndsWith("Api"))
+                controllerName = controllerName[..^3];
 
             var actions = GetActionMethods(controller);
 
@@ -32,12 +34,19 @@ public static class PermissionScanner
 
     private static List<string> GetActionMethods(Type controller)
     {
-        var baseControllerType = typeof(Controller);
+        var methods = new HashSet<string>();
+        var type = controller;
 
-        return controller.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-            .Where(m => !m.IsSpecialName)
-            .Select(m => m.Name)
-            .Distinct()
-            .ToList();
+        while (type != null && type != typeof(Controller) && type != typeof(ControllerBase) && type != typeof(object))
+        {
+            foreach (var m in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            {
+                if (!m.IsSpecialName && !m.Name.Contains('<'))
+                    methods.Add(m.Name);
+            }
+            type = type.BaseType;
+        }
+
+        return methods.ToList();
     }
 }
