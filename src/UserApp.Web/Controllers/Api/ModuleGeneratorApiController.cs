@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using UserApp.Application.Common;
 using UserApp.Application.Common.DTOs;
 using UserApp.Application.Common.Interfaces;
@@ -9,7 +9,7 @@ namespace UserApp.Web.Controllers.Api;
 
 [ApiController]
 [Route("api/module-generator")]
-[Authorize]
+[AllowAnonymous]
 public class ModuleGeneratorApiController : ControllerBase
 {
     private readonly IModuleGeneratorService _service;
@@ -28,6 +28,12 @@ public class ModuleGeneratorApiController : ControllerBase
             return BadRequest(
                 ApiResponse<object>.Fail("Invalid request"));
 
+        var moduleName = vm.ModuleName?.Trim();
+
+        if (string.IsNullOrWhiteSpace(moduleName))
+            return BadRequest(
+                ApiResponse<object>.Fail("Module name is required"));
+
         var fields = vm.Fields
             .Select(x => new ModuleFieldDto
             {
@@ -44,7 +50,7 @@ public class ModuleGeneratorApiController : ControllerBase
             .ToList();
 
         await _service.GenerateModuleAsync(
-            vm.ModuleName,
+            moduleName,
             fields,
             vm.RunMigration,
             vm.HasImage,
@@ -53,6 +59,6 @@ public class ModuleGeneratorApiController : ControllerBase
         return Ok(
             ApiResponse<object>.Ok(
                 null,
-                $"{vm.ModuleName} module generated successfully"));
+                $"{moduleName} module generated successfully"));
     }
 }

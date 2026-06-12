@@ -56,7 +56,7 @@ public class ProgramUpdater
         if (Array.Exists(lines, x => x.Trim() == usingLine))
             return;
 
-        var lastUsing = Array.FindLastIndex(lines, x => x.Trim().StartsWith("using"));
+        var lastUsing = Array.FindLastIndex(lines, x => x.Trim().StartsWith("using ") && !x.Trim().StartsWith("using ("));
         if (lastUsing == -1)
             throw new InvalidOperationException("No using statement found in Program.cs");
 
