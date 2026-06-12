@@ -8,6 +8,7 @@ using UserApp.Domain.Ais;
 using UserApp.Domain.Cocos;
 using UserApp.Domain.Roles;
 using UserApp.Domain.Categorys;
+using UserApp.Domain.Payments;
 
 
 namespace UserApp.Infrastructure.Persistence;
@@ -36,6 +37,7 @@ public class AppDbContext : DbContext
     public DbSet<Ai> Ais => Set<Ai>();
     public DbSet<Coco> Cocos => Set<Coco>();
 public DbSet<Category> Categorys => Set<Category>();
+public DbSet<Payment> Payments => Set<Payment>();
     // <AUTO-DBSETS-END>
 
 

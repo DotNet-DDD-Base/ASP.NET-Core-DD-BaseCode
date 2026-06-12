@@ -10,6 +10,7 @@ using UserApp.Web.ViewModels.Roles;
 using UserApp.Domain.Roles;
 using UserApp.Web.ViewModels.Permissions;
 using UserApp.Domain.Categorys;
+using UserApp.Domain.Payments;
 
 
 namespace UserApp.Web.Mapping;
@@ -50,6 +51,8 @@ public class MappingProfile : Profile
         CreateMap<CocoViewModel, Coco>();
 CreateMap<Category, CategoryViewModel>();
 CreateMap<CategoryViewModel, Category>();
+CreateMap<Payment, PaymentViewModel>();
+CreateMap<PaymentViewModel, Payment>();
         // <AUTO-MAPPINGS-END>
         CreateMap<RoleViewModel, Role>();
         CreateMap<PermissionViewModel, Permission>();

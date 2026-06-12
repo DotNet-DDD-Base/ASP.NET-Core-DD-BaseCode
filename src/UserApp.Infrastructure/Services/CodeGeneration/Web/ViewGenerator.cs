@@ -17,7 +17,7 @@ public class ViewGenerator
         _templates = templates;
     }
 
-    public void GenerateViews(string name, List<ModuleFieldDto> fields, bool hasImage)
+    public void GenerateViews(string name, string code, List<ModuleFieldDto> fields, bool hasImage)
     {
         var viewFolder = Path.Combine(_paths.SrcRoot, "UserApp.Web", "Views", name);
         _files.EnsureDirectory(viewFolder);
@@ -36,7 +36,7 @@ public class ViewGenerator
             new Dictionary<string, string>
             {
                 ["Name"] = name,
-                ["Inputs"] = BuildFormInputs(fields, hasImage)
+                ["Inputs"] = BuildFormInputs(fields, hasImage, code)
             });
 
         var editContent = _templates.RenderFile(
@@ -45,7 +45,7 @@ public class ViewGenerator
             {
                 ["Name"] = name,
                 ["CurrentImages"] = BuildCurrentImages(hasImage),
-                ["Inputs"] = BuildFormInputs(fields, hasImage),
+                ["Inputs"] = BuildFormInputs(fields, hasImage, code),
                 ["Scripts"] = BuildMediaScripts(hasImage)
             });
 
@@ -71,6 +71,8 @@ public class ViewGenerator
         {
             if (field.Name.Equals("Id", StringComparison.OrdinalIgnoreCase))
                 continue;
+            if (field.Name.Equals("Name", StringComparison.OrdinalIgnoreCase))
+                continue;
 
             sb.AppendLine($@"<th class=""text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase"">
                 {field.Name}
@@ -90,6 +92,8 @@ public class ViewGenerator
         foreach (var field in fields)
         {
             if (field.Name.Equals("Id", StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (field.Name.Equals("Name", StringComparison.OrdinalIgnoreCase))
                 continue;
 
             sb.AppendLine($@"<td class=""px-6 py-4 text-slate-600"">@p.{field.Name}</td>");
@@ -117,9 +121,21 @@ public class ViewGenerator
     // =========================
     // FORM INPUTS (CREATE + EDIT)
     // =========================
-    private static string BuildFormInputs(List<ModuleFieldDto> fields, bool hasImage)
+    private static string BuildFormInputs(List<ModuleFieldDto> fields, bool hasImage, string code)
     {
         var sb = new StringBuilder();
+
+        sb.AppendLine($@"
+<div>
+    <label asp-for=""SystemCode"" class=""block text-sm font-bold text-slate-700 mb-1.5"">
+        SystemCode
+    </label>
+
+    <input asp-for=""SystemCode"" value=""{code}""
+           class=""w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-500"" readonly />
+
+    <span asp-validation-for=""SystemCode"" class=""text-xs text-rose-500 mt-1""></span>
+</div>");
 
         foreach (var field in fields)
         {

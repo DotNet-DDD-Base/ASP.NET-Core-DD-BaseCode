@@ -52,6 +52,7 @@ public class ModuleGeneratorApiController : ControllerBase
 
         await _service.GenerateModuleAsync(
             moduleName,
+            vm.SystemCode,
             fields,
             vm.RunMigration,
             vm.HasImage,
