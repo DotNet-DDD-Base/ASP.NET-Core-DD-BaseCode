@@ -45,6 +45,9 @@ using UserApp.Application.Permissions;
 using UserApp.Domain.Categorys;
 using UserApp.Application.Categorys;
 using UserApp.Application.Categorys.Interfaces;
+using UserApp.Domain.Payments;
+using UserApp.Application.Payments;
+using UserApp.Application.Payments.Interfaces;
 
 // ================= AUTO MODULE IMPORTS =================
 // <AUTO-USINGS-START>
@@ -82,6 +85,7 @@ builder.Services.AddScoped<IMilkRepository, MilkRepository>();
 builder.Services.AddScoped<IAiRepository, AiRepository>();
 builder.Services.AddScoped<ICocoRepository, CocoRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 // <AUTO-REPOSITORIES-END>
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -101,6 +105,7 @@ builder.Services.AddScoped<IMilkService, MilkService>();
 builder.Services.AddScoped<IAiService, AiService>();
 builder.Services.AddScoped<ICocoService, CocoService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 // <AUTO-SERVICES-END>
 
 builder.Services.AddScoped<IUserService, UserService>();

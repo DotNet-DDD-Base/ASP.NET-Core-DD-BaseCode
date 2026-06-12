@@ -40,6 +40,7 @@ public class ModuleGeneratorService : IModuleGeneratorService
 
     public Task GenerateModuleAsync(
         string moduleName,
+        string? systemCode,
         List<ModuleFieldDto> fields,
         bool runMigration = false,
         bool hasImage = false,
@@ -51,12 +52,16 @@ public class ModuleGeneratorService : IModuleGeneratorService
 
         var name = Capitalize(moduleName.Trim());
 
+        var code = string.IsNullOrWhiteSpace(systemCode)
+    ? GenerateSystemCode(name)
+    : systemCode.Trim().ToUpperInvariant();
+
         Console.WriteLine($"Generating module: {name}");
 
-        _domain.Generate(name, fields, hasImage);
+        _domain.Generate(name, code, fields, hasImage);
         _application.Generate(name);
         _infrastructure.Generate(name);
-        _web.Generate(name, fields, hasImage);
+        _web.Generate(name, code, fields, hasImage);
 
         _mappingUpdater.Update(name);
         _dbContextUpdater.Update(name);
@@ -75,4 +80,12 @@ public class ModuleGeneratorService : IModuleGeneratorService
 
     private static string Capitalize(string input)
         => char.ToUpperInvariant(input[0]) + input[1..];
+    private static string GenerateSystemCode(string name)
+    {
+        return System.Text.RegularExpressions.Regex.Replace(
+            name.Trim(),
+            "(?<=[a-z])([A-Z])",
+            "_$1"
+        ).Replace(" ", "_").Replace("-", "_").ToUpperInvariant();
+    }
 }
