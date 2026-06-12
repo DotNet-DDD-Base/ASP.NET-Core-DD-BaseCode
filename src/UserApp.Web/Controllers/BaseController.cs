@@ -59,7 +59,7 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
         }
     }
 
-    public async Task<IActionResult> Index(int page = 1, int size = 10)
+    public virtual async Task<IActionResult> Index(int page = 1, int size = 10)
     {
         var data = await _service.ListAsync((page - 1) * size, size);
         var totalCount = await _service.CountAsync();
