@@ -1,9 +1,13 @@
+using System.Reflection;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.DependencyInjection;
 using UserApp.Application.Common;
 using UserApp.Application.Common.Interfaces;
 using UserApp.Application.Common.Media;
+using UserApp.Application.CommonTables.Interfaces;
+using UserApp.Domain.CommonTables;
 using UserApp.Web.Common;
 using UserApp.Web.ViewModels;
 using System.Security.Claims;
@@ -12,7 +16,7 @@ namespace UserApp.Web.Controllers;
 
 public abstract class BaseController<TEntity, TViewModel> : Controller
     where TEntity : class
-    where TViewModel : class
+    where TViewModel : class, new()
 {
     protected readonly IBaseService<TEntity> _service;
     protected readonly IMapper _mapper;
@@ -21,6 +25,9 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
     protected readonly IPermissionChecker? _permissionService;
     private IMediaService? MediaService =>
         _mediaService ?? HttpContext?.RequestServices.GetService<IMediaService>();
+
+    private ICommonTableService? CommonTableService =>
+        HttpContext?.RequestServices.GetService<ICommonTableService>();
 
     protected BaseController(
         IBaseService<TEntity> service,
@@ -59,6 +66,63 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
         }
     }
 
+    private async Task ResolveLookupDisplayNames(List<TViewModel> items)
+    {
+        var service = CommonTableService;
+        if (service == null) return;
+
+        var entityName = typeof(TEntity).Name;
+        var vmType = typeof(TViewModel);
+        var all = await service.ListAsync(0, 999);
+
+        foreach (var item in items)
+        {
+            foreach (var prop in vmType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (prop.PropertyType != typeof(string) || !prop.CanRead) continue;
+
+                var fieldName = prop.Name;
+                var nameProp = vmType.GetProperty($"{fieldName}Name", BindingFlags.Public | BindingFlags.Instance);
+                if (nameProp == null || !nameProp.CanWrite || nameProp.PropertyType != typeof(string)) continue;
+
+                var code = prop.GetValue(item) as string;
+                if (string.IsNullOrEmpty(code)) continue;
+
+                var type = $"{entityName}{fieldName}";
+                var displayName = all.FirstOrDefault(x => x.Type == type && x.Code == code)?.Name;
+                if (displayName != null)
+                    nameProp.SetValue(item, displayName);
+            }
+        }
+    }
+
+    private async Task PopulateLookupOptions(object vm)
+    {
+        var service = CommonTableService;
+        if (service == null) return;
+
+        var entityName = typeof(TEntity).Name;
+        var vmType = vm.GetType();
+        var all = await service.ListAsync(0, 999);
+
+        foreach (var prop in vmType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (prop.PropertyType != typeof(List<SelectListItem>) || !prop.CanWrite) continue;
+
+            var fieldName = prop.Name.EndsWith("Options") ? prop.Name[..^"Options".Length] : null;
+            if (string.IsNullOrEmpty(fieldName)) continue;
+
+            var type = $"{entityName}{fieldName}";
+            var options = all
+                .Where(x => x.Type == type)
+                .OrderBy(x => x.Name)
+                .Select(x => new SelectListItem { Value = x.Code, Text = x.Name })
+                .ToList();
+
+            prop.SetValue(vm, options);
+        }
+    }
+
     public virtual async Task<IActionResult> Index(int page = 1, int size = 10)
     {
         var data = await _service.ListAsync((page - 1) * size, size);
@@ -70,6 +134,8 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
         {
             await LoadImageUrls(item);
         }
+
+        await ResolveLookupDisplayNames(items);
 
         return View("Index", new ListViewModel<TViewModel>
         {
@@ -87,19 +153,27 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
 
         var vm = _mapper.Map<TViewModel>(entity);
         await LoadImageUrls(vm, id);
+        await ResolveLookupDisplayNames([vm]);
 
         return View("Details", vm);
     }
 
-    public IActionResult Create()
-        => View("Create");
+    public virtual async Task<IActionResult> Create()
+    {
+        var vm = new TViewModel();
+        await PopulateLookupOptions(vm);
+        return View("Create", vm);
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public virtual async Task<IActionResult> Create(TViewModel vm, List<IFormFile>? files = null)
     {
         if (!ValidateModel(vm))
+        {
+            await PopulateLookupOptions(vm);
             return View(vm);
+        }
 
         var entity = _mapper.Map<TEntity>(vm);
 
@@ -108,23 +182,27 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    public async Task<IActionResult> Edit(Guid id)
+    public virtual async Task<IActionResult> Edit(Guid id)
     {
         var entity = await _service.GetByIdAsync(id);
         if (entity == null) return NotFound();
 
         var vm = _mapper.Map<TViewModel>(entity);
         await LoadImageUrls(vm, id);
+        await PopulateLookupOptions(vm);
 
         return View("Edit", vm);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(Guid id, TViewModel vm, List<IFormFile>? files = null)
+    public virtual async Task<IActionResult> Edit(Guid id, TViewModel vm, List<IFormFile>? files = null)
     {
         if (!ModelState.IsValid)
+        {
+            await PopulateLookupOptions(vm);
             return View("Edit", vm);
+        }
 
         var entity = await _service.GetByIdAsync(id);
         if (entity == null) return NotFound();
@@ -200,7 +278,7 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
     protected async Task<bool> HasPermission(string permission)
     {
         if (_permissionService == null)
-            return true; // or false depending on security policy
+            return true;
 
         var userId = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null) return false;

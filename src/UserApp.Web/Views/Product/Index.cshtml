@@ -1,0 +1,69 @@
+@model ListViewModel<ProductViewModel>
+@using UserApp.Web.ViewModels.Products
+
+<div class="max-w-6xl mx-auto animate-fade-in">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">Products</h1>
+            <p class="text-slate-500 text-sm mt-1">Manage your product catalog</p>
+        </div>
+        <a asp-action="Create"
+           class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            New Product
+        </a>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <table class="w-full">
+            <thead>
+                <tr class="bg-slate-50 border-b border-slate-200">
+                    <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Name</th>
+                    <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                    <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Payment</th>
+                    <th class="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @foreach (var item in Model.Items)
+                {
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-6 py-4">
+                            <span class="text-sm font-semibold text-slate-800">@item.Name</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold
+                                @(item.Status == "ACTIVE" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600")">
+                                <span class="w-1.5 h-1.5 rounded-full @(item.Status == "ACTIVE" ? "bg-emerald-500" : "bg-slate-400")"></span>
+                                @item.StatusName
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-sm font-semibold text-slate-800">@item.PaymetName</span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <a asp-action="Edit" asp-route-id="@item.Id"
+                                   class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors">
+                                    Edit
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out;
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
