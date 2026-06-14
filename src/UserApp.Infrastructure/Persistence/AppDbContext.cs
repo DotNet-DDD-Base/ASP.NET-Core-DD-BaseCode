@@ -9,6 +9,8 @@ using UserApp.Domain.Cocos;
 using UserApp.Domain.Roles;
 using UserApp.Domain.Categorys;
 using UserApp.Domain.Payments;
+using UserApp.Domain.CommonTables;
+using UserApp.Domain.Products;
 
 
 namespace UserApp.Infrastructure.Persistence;
@@ -38,6 +40,8 @@ public class AppDbContext : DbContext
     public DbSet<Coco> Cocos => Set<Coco>();
 public DbSet<Category> Categorys => Set<Category>();
 public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<CommonTable> CommonTables => Set<CommonTable>();
+    public DbSet<Product> Products => Set<Product>();
     // <AUTO-DBSETS-END>
 
 

@@ -11,6 +11,10 @@ using UserApp.Domain.Roles;
 using UserApp.Web.ViewModels.Permissions;
 using UserApp.Domain.Categorys;
 using UserApp.Domain.Payments;
+using UserApp.Domain.CommonTables;
+using UserApp.Web.ViewModels.CommonTables;
+using UserApp.Domain.Products;
+using UserApp.Web.ViewModels.Products;
 
 
 namespace UserApp.Web.Mapping;
@@ -39,8 +43,10 @@ public class MappingProfile : Profile
         // ================= AUTO MAPPINGS =================
         // <AUTO-MAPPINGS-START>
 
-
-
+        CreateMap<CommonTable, CommonTableViewModel>();
+        CreateMap<CommonTableViewModel, CommonTable>();
+        CreateMap<Product, ProductViewModel>();
+        CreateMap<ProductViewModel, Product>();
         CreateMap<Pap, PapViewModel>();
         CreateMap<PapViewModel, Pap>();
         CreateMap<Milk, MilkViewModel>();

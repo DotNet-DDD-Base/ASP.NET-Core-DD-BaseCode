@@ -48,6 +48,12 @@ using UserApp.Application.Categorys.Interfaces;
 using UserApp.Domain.Payments;
 using UserApp.Application.Payments;
 using UserApp.Application.Payments.Interfaces;
+using UserApp.Domain.CommonTables;
+using UserApp.Application.CommonTables;
+using UserApp.Application.CommonTables.Interfaces;
+using UserApp.Domain.Products;
+using UserApp.Application.Products;
+using UserApp.Application.Products.Interfaces;
 
 // ================= AUTO MODULE IMPORTS =================
 // <AUTO-USINGS-START>
@@ -86,6 +92,8 @@ builder.Services.AddScoped<IAiRepository, AiRepository>();
 builder.Services.AddScoped<ICocoRepository, CocoRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<ICommonTableRepository, CommonTableRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
 // <AUTO-REPOSITORIES-END>
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -106,6 +114,8 @@ builder.Services.AddScoped<IAiService, AiService>();
 builder.Services.AddScoped<ICocoService, CocoService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<ICommonTableService, CommonTableService>();
+builder.Services.AddScoped<IProductService, ProductService>();
 // <AUTO-SERVICES-END>
 
 builder.Services.AddScoped<IUserService, UserService>();
