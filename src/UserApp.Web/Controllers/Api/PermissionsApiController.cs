@@ -10,7 +10,6 @@ namespace UserApp.Web.Controllers.Api;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class PermissionsApiController : BaseApiController<Permission, PermissionViewModel>
 {
     public PermissionsApiController(IPermissionService service, IMapper mapper) : base(service, mapper)

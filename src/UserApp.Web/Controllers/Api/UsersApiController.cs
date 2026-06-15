@@ -12,7 +12,6 @@ namespace UserApp.Web.Controllers.Api
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class UsersApiController : BaseApiController<User, UserDto>
     {
         private readonly IBaseRepository<Role> _roleRepo;

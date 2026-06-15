@@ -9,7 +9,6 @@ namespace UserApp.Web.Controllers.Api;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class HumanApiController : BaseApiController<Human, HumanViewModel>
 {
     public HumanApiController(IHumanService service, IMapper mapper) : base(service, mapper)
