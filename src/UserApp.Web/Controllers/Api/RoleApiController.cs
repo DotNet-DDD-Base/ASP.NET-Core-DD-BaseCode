@@ -10,7 +10,6 @@ namespace UserApp.Web.Controllers.Api;
 
 [ApiController]
 [Route("api/roles")]
-[Authorize]
 public class RolesApiController : BaseApiController<Role, RoleViewModel>
 {
     private readonly IBaseRepository<Permission> _permRepo;

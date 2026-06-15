@@ -9,7 +9,6 @@ namespace UserApp.Web.Controllers.Api;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class CategoryApiController : BaseApiController<Category, CategoryViewModel>
 {
     public CategoryApiController(ICategoryService service, IMapper mapper) : base(service, mapper)
