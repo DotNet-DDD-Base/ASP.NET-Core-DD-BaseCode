@@ -15,6 +15,7 @@ using UserApp.Domain.Humans;
 using UserApp.Domain.Messengers;
 using UserApp.Domain.Cars;
 using UserApp.Domain.Notifications;
+using UserApp.Domain.SidebarItems;
 
 namespace UserApp.Infrastructure.Persistence;
 
@@ -48,7 +49,8 @@ public DbSet<Payment> Payments => Set<Payment>();
 public DbSet<Human> Humans => Set<Human>();
 public DbSet<Messenger> Messengers => Set<Messenger>();
 public DbSet<Car> Cars => Set<Car>();
-public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<SidebarItem> SidebarItems => Set<SidebarItem>();
     // <AUTO-DBSETS-END>
 
 
@@ -60,9 +62,10 @@ public DbSet<Notification> Notifications => Set<Notification>();
         base.OnModelCreating(modelBuilder);
 
         // <AUTO-CONFIG-START>
-        // <AUTO-CONFIG-END>
+                // <AUTO-CONFIG-END>
 
         modelBuilder.ApplyConfiguration(new UserConfiguration());
+        modelBuilder.ApplyConfiguration(new SidebarItemConfiguration());
 
         modelBuilder.Entity<UserRole>()
             .HasKey(x => new { x.UserId, x.RoleId });

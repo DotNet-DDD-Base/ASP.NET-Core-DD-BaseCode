@@ -10,6 +10,7 @@ using UserApp.Domain.CommonTables;
 using UserApp.Infrastructure.Persistence.Repositories;
 using UserApp.Infrastructure.Services.CodeGeneration;
 using UserApp.Infrastructure.Services.CodeGeneration.Shared;
+using UserApp.Infrastructure.Services.CodeGeneration.Updates;
 
 namespace UserApp.Infrastructure.Services;
 
@@ -26,6 +27,7 @@ public class ModuleGeneratorService : IModuleGeneratorService
     private readonly MappingUpdater _mappingUpdater;
     private readonly ProgramUpdater _programUpdater;
     private readonly MigrationRunner _migrationRunner;
+    private readonly SidebarUpdater _sidebarUpdater;
 
     public ModuleGeneratorService()
     {
@@ -41,6 +43,7 @@ public class ModuleGeneratorService : IModuleGeneratorService
         _mappingUpdater = new MappingUpdater(_files, _paths);
         _programUpdater = new ProgramUpdater(_files, _paths);
         _migrationRunner = new MigrationRunner(_paths);
+        _sidebarUpdater = new SidebarUpdater();
     }
 
     public Task GenerateModuleAsync(
@@ -48,7 +51,8 @@ public class ModuleGeneratorService : IModuleGeneratorService
         List<ModuleFieldDto> fields,
         bool runMigration = false,
         bool hasImage = false,
-        bool runDbUpdate = false
+        bool runDbUpdate = false,
+        string? sidebarGroup = null
     )
     {
         if (string.IsNullOrWhiteSpace(moduleName))
@@ -89,6 +93,9 @@ public class ModuleGeneratorService : IModuleGeneratorService
             _migrationRunner.UpdateDatabase();
 
         SeedCommonTableFields(name, fields);
+
+        if (!string.IsNullOrWhiteSpace(sidebarGroup))
+            _sidebarUpdater.Add(name, sidebarGroup);
 
         Console.WriteLine($"Module {name} generated successfully");
 

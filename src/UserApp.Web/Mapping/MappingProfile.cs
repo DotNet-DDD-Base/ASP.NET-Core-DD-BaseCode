@@ -19,7 +19,6 @@ using UserApp.Domain.Humans;
 using UserApp.Domain.Messengers;
 using UserApp.Domain.Cars;
 using UserApp.Domain.Notifications;
-
 namespace UserApp.Web.Mapping;
 
 public class MappingProfile : Profile

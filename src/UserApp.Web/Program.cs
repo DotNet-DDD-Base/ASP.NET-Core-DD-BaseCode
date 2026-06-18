@@ -66,6 +66,9 @@ using UserApp.Application.Cars.Interfaces;
 using UserApp.Domain.Notifications;
 using UserApp.Application.Notifications;
 using UserApp.Application.Notifications.Interfaces;
+using UserApp.Domain.SidebarItems;
+using UserApp.Application.SidebarItems;
+using UserApp.Application.SidebarItems.Interfaces;
 
 // ================= AUTO MODULE IMPORTS =================
 // <AUTO-USINGS-START>
@@ -110,6 +113,7 @@ builder.Services.AddScoped<IHumanRepository, HumanRepository>();
 builder.Services.AddScoped<IMessengerRepository, MessengerRepository>();
 builder.Services.AddScoped<ICarRepository, CarRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<ISidebarItemRepository, SidebarItemRepository>();
 // <AUTO-REPOSITORIES-END>
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -136,6 +140,7 @@ builder.Services.AddScoped<IHumanService, HumanService>();
 builder.Services.AddScoped<IMessengerService, MessengerService>();
 builder.Services.AddScoped<ICarService, CarService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<ISidebarItemService, SidebarItemService>();
 // <AUTO-SERVICES-END>
 
 builder.Services.AddScoped<IUserService, UserService>();
@@ -231,6 +236,50 @@ using (var scope = app.Services.CreateScope())
     await UserApp.Infrastructure.Persistence.Seed.RbacSeeder.SeedPermissionsAsync(db);
     await UserApp.Infrastructure.Persistence.Seed.RbacSeeder.SeedAdminRolePermissionsAsync(db);
     await SeedFlashMessages(db);
+    await SeedSidebarItems(db);
+}
+
+static async Task SeedSidebarItems(AppDbContext db)
+{
+    var existing = db.Set<UserApp.Domain.SidebarItems.SidebarItem>()
+        .Select(x => x.ControllerName)
+        .ToHashSet();
+
+    var items = new (string moduleName, string controllerName, string groupName, int order)[]
+    {
+        ("Common Tables", "CommonTable", "Master Data", 1),
+        ("Categories",    "Category",    "Master Data", 2),
+        ("Milks",         "Milk",        "Commerce",    1),
+        ("Paps",          "Pap",         "Commerce",    2),
+        ("Cars",          "Car",         "Commerce",    3),
+        ("Products",      "Product",     "Commerce",    4),
+        ("Payments",      "Payment",     "Commerce",    5),
+        ("Humans",        "Human",       "Operations",  1),
+        ("Cocos",         "Coco",        "Operations",  2),
+        ("Messengers",    "Messenger",   "Communication", 1),
+        ("Media",         "Media",       "Communication", 2),
+        ("Ais",           "Ai",          "AI",          1),
+        ("Users",         "Users",       "System",      1),
+        ("Roles",         "Roles",       "System",      2),
+        ("Permissions",   "Permissions", "System",      3),
+        ("Module Generator", "ModuleGenerator", "System", 4),
+    };
+
+    foreach (var (moduleName, controllerName, groupName, order) in items)
+    {
+        if (existing.Contains(controllerName)) continue;
+
+        db.Set<UserApp.Domain.SidebarItems.SidebarItem>().Add(new()
+        {
+            ModuleName = moduleName,
+            ControllerName = controllerName,
+            GroupName = groupName,
+            DisplayOrder = order,
+            IsActive = true
+        });
+    }
+
+    await db.SaveChangesAsync();
 }
 
 static async Task SeedFlashMessages(AppDbContext db)

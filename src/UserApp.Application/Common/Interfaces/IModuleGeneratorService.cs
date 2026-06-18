@@ -9,6 +9,7 @@ public interface IModuleGeneratorService
         List<ModuleFieldDto> fields,
         bool runMigration = false,
         bool hasImage = false,
-        bool runDbUpdate = false
+        bool runDbUpdate = false,
+        string? sidebarGroup = null
     );
 }
