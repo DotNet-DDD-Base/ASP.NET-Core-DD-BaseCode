@@ -9,6 +9,8 @@ public class GenerateModuleViewModel
     public bool HasImage { get; set; }
     public bool HasRelation { get; set; }
 
+    public string? SidebarGroup { get; set; }
+
     public List<ModuleFieldViewModel> Fields { get; set; } = new();
     public List<string> AvailableTables { get; set; } = new();
 }

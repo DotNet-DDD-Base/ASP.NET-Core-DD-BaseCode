@@ -499,6 +499,7 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
         await ResolveLookupDisplayNames([vm]);
         await ResolveRelationDisplayNames([vm]);
         await ResolvePivotSelectedIds([vm]);
+        await LoadParentData(vm);
 
         return View("Details", vm);
     }
@@ -643,6 +644,59 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
 
         await SetFlashMessageAsync("Delete");
         return RedirectToAction(nameof(Index));
+    }
+
+    private async Task LoadParentData(TViewModel vm)
+    {
+        var sp = HttpContext?.RequestServices;
+        if (sp == null) return;
+
+        var vmType = typeof(TViewModel);
+        var parentFields = new Dictionary<string, List<KeyValuePair<string, string>>>();
+
+        foreach (var prop in vmType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (prop.PropertyType != typeof(Guid) && prop.PropertyType != typeof(Guid?)) continue;
+            if (!prop.Name.EndsWith("Id") || prop.Name == "Id") continue;
+
+            var fieldName = prop.Name[..^"Id".Length];
+            var idValue = prop.GetValue(vm);
+            if (idValue == null || (Guid)idValue == Guid.Empty) continue;
+
+            var entityName = fieldName;
+            var entityType = Type.GetType($"UserApp.Domain.{entityName}s.{entityName}, UserApp.Domain");
+            if (entityType == null) continue;
+
+            var serviceType = typeof(IBaseService<>).MakeGenericType(entityType);
+            var service = sp.GetService(serviceType);
+            if (service == null) continue;
+
+            var getMethod = serviceType.GetMethod("GetByIdAsync", new[] { typeof(Guid) });
+            if (getMethod == null) continue;
+
+            var task = (Task)getMethod.Invoke(service, new object[] { (Guid)idValue })!;
+            await task.ConfigureAwait(false);
+            var resultProperty = task.GetType().GetProperty("Result");
+            var entity = resultProperty?.GetValue(task);
+            if (entity == null) continue;
+
+            var fields = new List<KeyValuePair<string, string>>();
+            foreach (var entityProp in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (entityProp.Name == "Id") continue;
+                if (entityProp.Name == "IsDeleted") continue;
+                if (entityProp.PropertyType == typeof(Guid) || entityProp.PropertyType == typeof(Guid?)) continue;
+                if (entityProp.PropertyType == typeof(DateTime) || entityProp.PropertyType == typeof(DateTime?)) continue;
+                if (typeof(System.Collections.IEnumerable).IsAssignableFrom(entityProp.PropertyType) && entityProp.PropertyType != typeof(string)) continue;
+
+                var val = entityProp.GetValue(entity);
+                fields.Add(new KeyValuePair<string, string>(entityProp.Name, val?.ToString() ?? ""));
+            }
+
+            parentFields[entityName] = fields;
+        }
+
+        ViewData["ParentFields"] = parentFields;
     }
 
     protected bool ValidateModel<T>(T model)

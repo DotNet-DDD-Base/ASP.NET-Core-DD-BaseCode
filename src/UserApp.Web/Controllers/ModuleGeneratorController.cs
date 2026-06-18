@@ -91,7 +91,8 @@ public class ModuleGeneratorController : Controller
             fields,
             vm.RunMigration,
             vm.HasImage,
-            vm.RunDbUpdate
+            vm.RunDbUpdate,
+            vm.SidebarGroup
         );
 
         TempData["Success"] = $"{moduleName} module generated successfully!";

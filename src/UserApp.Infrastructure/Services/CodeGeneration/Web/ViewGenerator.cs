@@ -53,9 +53,19 @@ public class ViewGenerator
                 ["Scripts"] = BuildMediaScripts(hasImage) + BuildCheckboxScripts(hasCheckbox) + BuildPivotScripts(hasPivot)
             });
 
+        var detailsContent = _templates.RenderFile(
+            new[] { "Web", "Templates", "Details.tpl" },
+            new Dictionary<string, string>
+            {
+                ["Name"] = name,
+                ["DetailFields"] = BuildDetailFields(fields),
+                ["DetailImages"] = BuildDetailImages(hasImage)
+            });
+
         _files.WriteFile(Path.Combine(viewFolder, "Index.cshtml"), indexContent);
         _files.WriteFile(Path.Combine(viewFolder, "Create.cshtml"), createContent);
         _files.WriteFile(Path.Combine(viewFolder, "Edit.cshtml"), editContent);
+        _files.WriteFile(Path.Combine(viewFolder, "Details.cshtml"), detailsContent);
     }
 
     // =========================
@@ -352,6 +362,108 @@ public class ViewGenerator
         }
     </div>
 }";
+    }
+
+    // =========================
+    // DETAIL VIEW
+    // =========================
+    private static string BuildDetailFields(List<ModuleFieldDto> fields)
+    {
+        var sb = new StringBuilder();
+
+        foreach (var field in fields)
+        {
+            if (field.Name.Equals("Id", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            // RELATION (FK) — show resolved name
+            if (field.IsRelation && !field.IsPivot)
+            {
+                sb.AppendLine($@"
+<div>
+    <label class=""block text-sm font-bold text-slate-700 mb-1.5"">{field.Name}</label>
+    <div class=""px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800"">
+        @(!string.IsNullOrEmpty(Model.{field.Name}Name) ? Model.{field.Name}Name : ""—"")
+    </div>
+</div>");
+                continue;
+            }
+
+            // PIVOT — show comma-separated display
+            if (field.IsPivot)
+            {
+                sb.AppendLine($@"
+<div>
+    <label class=""block text-sm font-bold text-slate-700 mb-1.5"">{field.Name}</label>
+    <div class=""px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800"">
+        @(!string.IsNullOrEmpty(Model.{field.Name}Display) ? Model.{field.Name}Display : ""None"")
+    </div>
+</div>");
+                continue;
+            }
+
+            // COMMON TABLE (lookup) — show resolved name
+            if (field.UseCommonTable)
+            {
+                sb.AppendLine($@"
+<div>
+    <label class=""block text-sm font-bold text-slate-700 mb-1.5"">{field.Name}</label>
+    <div class=""px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800"">
+        @Model.{field.Name}Name
+    </div>
+</div>");
+                continue;
+            }
+
+            // BOOLEAN
+            if (IsBooleanType(field.Type))
+            {
+                sb.AppendLine($@"
+<div>
+    <label class=""block text-sm font-bold text-slate-700 mb-1.5"">{field.Name}</label>
+    <div class=""px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800"">
+        @(Model.{field.Name} ? ""Yes"" : ""No"")
+    </div>
+</div>");
+                continue;
+            }
+
+            // DEFAULT (string, int, decimal, etc.)
+            sb.AppendLine($@"
+<div>
+    <label class=""block text-sm font-bold text-slate-700 mb-1.5"">{field.Name}</label>
+    <div class=""px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800"">
+        @Model.{field.Name}
+    </div>
+</div>");
+        }
+
+        return sb.ToString();
+    }
+
+    private static string BuildDetailImages(bool hasImage)
+    {
+        if (!hasImage) return string.Empty;
+
+        return @"
+<div>
+    <label class=""block text-sm font-bold text-slate-700 mb-1.5"">Images</label>
+    @if (Model.ImageUrls.Count > 0)
+    {
+        <div class=""grid grid-cols-3 gap-3"">
+        @foreach (var img in Model.ImageUrls)
+        {
+            <img src=""@img"" class=""w-full h-32 object-cover rounded-xl border border-slate-200"" />
+        }
+        </div>
+    }
+    else
+    {
+        <div class=""px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-400"">
+            No images
+        </div>
+    }
+</div>";
     }
 
     // =========================

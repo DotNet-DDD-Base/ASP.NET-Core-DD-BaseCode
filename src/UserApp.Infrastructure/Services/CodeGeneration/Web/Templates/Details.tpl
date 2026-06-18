@@ -1,0 +1,59 @@
+@model UserApp.Web.ViewModels.{{Name}}ViewModel
+
+<div class="max-w-2xl mx-auto animate-fade-in">
+    <div class="mb-8">
+        <a asp-action="Index" class="inline-flex items-center gap-1.5 text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            Back to {{Name}}s
+        </a>
+        <h1 class="text-3xl font-black text-slate-800 tracking-tight mt-2">{{Name}} Details</h1>
+        <p class="text-slate-500 text-sm mt-1">View {{Name}} record details</p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+        <div class="space-y-6">
+{{DetailFields}}
+{{DetailImages}}
+
+            @if (ViewData["ParentFields"] is Dictionary<string, List<KeyValuePair<string, string>>> parentData)
+            {
+                @foreach (var entry in parentData)
+                {
+                    <div class="pt-6 border-t border-slate-100">
+                        <h2 class="text-lg font-bold text-slate-700 mb-4">@entry.Key</h2>
+                        <div class="space-y-4">
+                            @foreach (var field in entry.Value)
+                            {
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-500 mb-1">@field.Key</label>
+                                    <div class="px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800">
+                                        @field.Value
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        <div class="flex items-center gap-3 mt-8 pt-6 border-t border-slate-100">
+            <a asp-action="Index"
+               class="px-6 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
+                Back to List
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out;
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>

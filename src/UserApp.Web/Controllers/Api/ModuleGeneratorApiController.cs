@@ -79,7 +79,8 @@ public class ModuleGeneratorApiController : ControllerBase
             fields,
             vm.RunMigration,
             vm.HasImage,
-            vm.RunDbUpdate);
+            vm.RunDbUpdate,
+            vm.SidebarGroup);
 
         return Ok(
             ApiResponse<object>.Ok(
