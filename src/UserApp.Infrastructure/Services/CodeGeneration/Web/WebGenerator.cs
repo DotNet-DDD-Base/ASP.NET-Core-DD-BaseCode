@@ -32,11 +32,13 @@ public class WebGenerator
         _files.EnsureDirectory(apiControllersFolder);
         _files.EnsureDirectory(viewModelsFolder);
 
+        var displayFieldCode = BuildDisplayFieldCode(fields);
         var controllerContent = _templates.RenderFile(
             new[] { "Web", "Templates", "Controller.tpl" },
             new Dictionary<string, string>
             {
-                ["Name"] = name
+                ["Name"] = name,
+                ["DisplayFieldCode"] = displayFieldCode
             });
 
         var apiControllerContent = _templates.RenderFile(
@@ -183,4 +185,14 @@ public class WebGenerator
 
     private static string FormatDecimal(decimal value)
         => value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    private static string BuildDisplayFieldCode(List<ModuleFieldDto> fields)
+    {
+        var sb = new StringBuilder();
+        foreach (var field in fields.Where(f => f.IsRelation && !f.IsPivot && !string.IsNullOrWhiteSpace(f.DisplayField) && !string.IsNullOrWhiteSpace(f.RelatedEntityName)))
+        {
+            sb.AppendLine($"        DisplayFieldForEntity[\"{field.RelatedEntityName}\"] = \"{field.DisplayField}\";");
+        }
+        return sb.ToString();
+    }
 }

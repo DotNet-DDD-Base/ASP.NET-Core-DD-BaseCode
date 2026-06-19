@@ -10,5 +10,5 @@ public class {{Name}}Controller : BaseController<{{Name}}, {{Name}}ViewModel>
 {
     public {{Name}}Controller(I{{Name}}Service service, IMapper mapper) : base(service, mapper)
     {
-    }
+{{DisplayFieldCode}}    }
 }

@@ -88,6 +88,7 @@ public class ModuleGeneratorController : Controller
         {
             var relIsPivot = HttpContext.Request.Form["_rel_IsPivot"].FirstOrDefault() == "true";
             var relDeleteBehavior = HttpContext.Request.Form["_rel_DeleteBehavior"].FirstOrDefault() ?? "Cascade";
+            var relDisplayField = HttpContext.Request.Form["_rel_DisplayField"].FirstOrDefault();
             fields.Add(new ModuleFieldDto
             {
                 Name = relName,
@@ -95,7 +96,8 @@ public class ModuleGeneratorController : Controller
                 IsRelation = true,
                 RelatedEntityName = relName,
                 IsPivot = relIsPivot,
-                DeleteBehavior = relDeleteBehavior
+                DeleteBehavior = relDeleteBehavior,
+                DisplayField = relDisplayField
             });
         }
 

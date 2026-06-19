@@ -19,6 +19,9 @@ using UserApp.Domain.Messengers;
 using UserApp.Domain.Cars;
 using UserApp.Domain.Notifications;
 using UserApp.Domain.Products;
+using UserApp.Domain.Customers;
+using UserApp.Domain.Orders;
+using UserApp.Domain.OrderDetails;
 
 namespace UserApp.Web.Mapping;
 
@@ -70,6 +73,12 @@ CreateMap<Notification, NotificationViewModel>();
 CreateMap<NotificationViewModel, Notification>();
 CreateMap<Product, ProductViewModel>();
 CreateMap<ProductViewModel, Product>();
+CreateMap<Customer, CustomerViewModel>();
+CreateMap<CustomerViewModel, Customer>();
+CreateMap<Order, OrderViewModel>();
+CreateMap<OrderViewModel, Order>();
+CreateMap<OrderDetail, OrderDetailViewModel>();
+CreateMap<OrderDetailViewModel, OrderDetail>();
         // <AUTO-MAPPINGS-END>
         CreateMap<RoleViewModel, Role>();
         CreateMap<PermissionViewModel, Permission>();

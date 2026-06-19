@@ -18,6 +18,9 @@ using UserApp.Domain.Notifications;
 using UserApp.Domain.SidebarItems;
 using UserApp.Domain.Products;
 using UserApp.Domain.SidebarGroups;
+using UserApp.Domain.Customers;
+using UserApp.Domain.Orders;
+using UserApp.Domain.OrderDetails;
 
 namespace UserApp.Infrastructure.Persistence;
 
@@ -56,6 +59,9 @@ public DbSet<Notification> Notifications => Set<Notification>();
 public DbSet<Product> Products => Set<Product>();
     public DbSet<SidebarGroup> SidebarGroups => Set<SidebarGroup>();
 
+public DbSet<Customer> Customers => Set<Customer>();
+public DbSet<Order> Orders => Set<Order>();
+public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
     // <AUTO-DBSETS-END>
 
 
@@ -68,6 +74,8 @@ public DbSet<Product> Products => Set<Product>();
 
         // <AUTO-CONFIG-START>
         modelBuilder.ApplyConfiguration(new ProductConfiguration());
+        modelBuilder.ApplyConfiguration(new OrderConfiguration());
+        modelBuilder.ApplyConfiguration(new OrderDetailConfiguration());
         // <AUTO-CONFIG-END>
 
         modelBuilder.ApplyConfiguration(new UserConfiguration());
