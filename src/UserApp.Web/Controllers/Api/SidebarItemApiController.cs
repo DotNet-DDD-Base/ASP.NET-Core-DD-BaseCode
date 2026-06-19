@@ -48,6 +48,10 @@ public class SidebarItemApiController : ControllerBase
             DisplayOrder = dto.DisplayOrder
         };
 
+        var existing = await _service.GetActiveAsync();
+        if (existing.Any(x => x.ModuleName.Equals(item.ModuleName, StringComparison.OrdinalIgnoreCase) && x.GroupId == item.GroupId))
+            return Ok(ApiResponse<object>.Ok(null, "Module already exists in sidebar"));
+
         await _service.AddAsync(item);
         return Ok(ApiResponse<object>.Ok(null, "Module added to sidebar"));
     }

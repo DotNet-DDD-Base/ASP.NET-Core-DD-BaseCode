@@ -12,6 +12,10 @@ public class SidebarUpdater
         var repo = ServiceProviderAccessor.Current?.GetService(typeof(ISidebarItemRepository)) as ISidebarItemRepository;
         if (repo == null) return;
 
+        var existing = repo.GetActiveAsync().GetAwaiter().GetResult();
+        if (existing.Any(x => x.ModuleName.Equals(moduleName, StringComparison.OrdinalIgnoreCase) && x.GroupId == groupId))
+            return;
+
         var item = new SidebarItem
         {
             ModuleName = moduleName,

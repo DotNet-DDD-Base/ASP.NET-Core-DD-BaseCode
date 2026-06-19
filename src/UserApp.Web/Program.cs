@@ -68,6 +68,16 @@ using UserApp.Application.Products.Interfaces;
 using UserApp.Domain.SidebarGroups;
 using UserApp.Application.SidebarGroups;
 using UserApp.Application.SidebarGroups.Interfaces;
+using UserApp.Domain.Customers;
+using UserApp.Application.Customers;
+using UserApp.Application.Customers.Interfaces;
+using UserApp.Domain.Orders;
+using UserApp.Application.Orders;
+using UserApp.Application.Orders.Interfaces;
+using UserApp.Domain.OrderDetails;
+using UserApp.Application.OrderDetails;
+using UserApp.Application.OrderDetails.Interfaces;
+
 
 // ================= AUTO MODULE IMPORTS =================
 // <AUTO-USINGS-START>
@@ -114,6 +124,9 @@ builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<ISidebarItemRepository, SidebarItemRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ISidebarGroupRepository, SidebarGroupRepository>();
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IOrderDetailRepository, OrderDetailRepository>();
 // <AUTO-REPOSITORIES-END>
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -142,6 +155,9 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ISidebarItemService, SidebarItemService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ISidebarGroupService, SidebarGroupService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IOrderDetailService, OrderDetailService>();
 // <AUTO-SERVICES-END>
 
 builder.Services.AddScoped<IUserService, UserService>();
@@ -458,7 +474,7 @@ app.UseAuthorization();
 // ------------------------------------------------
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Auth}/{action=Login}"
+    pattern: "{controller=Auth}/{action=Login}/{id?}"
 );
 
 app.Run();

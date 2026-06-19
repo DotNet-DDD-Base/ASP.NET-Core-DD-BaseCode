@@ -362,15 +362,31 @@
                                             </label>
                                         </div>
                                     </div>
-                                    <div id="pivotCard" class="hidden opacity-50">
+                                    <div id="displayFieldRow" class="hidden mb-3">
+                                        <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Display Field</div>
+                                        <select id="relDisplayFieldSelect" onchange="onDisplayFieldSelect()" class="input-base">
+                                            <option value="">-- Auto (Name) --</option>
+                                        </select>
+                                        <div class="text-[10px] text-slate-400 mt-1 italic">Field used to display this relation in dropdowns and views</div>
+                                    </div>
+                                    <div id="dataPreviewRow" class="hidden mt-3">
+                                        <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Sample Records</div>
+                                        <div id="dataPreviewTable" class="overflow-x-auto rounded-lg border border-slate-200 bg-white max-h-40 overflow-y-auto custom-scrollbar">
+                                            <div class="text-xs text-slate-400 text-center py-6">Loading...</div>
+                                        </div>
+                                    </div>
+                                    <div id="pivotCard" class="hidden opacity-50 mt-3 p-3 rounded-lg border border-indigo-200/60 bg-indigo-50/40 border-l-4 border-l-indigo-400">
                                         <div class="flex items-center justify-between">
                                             <div>
-                                                <div class="text-xs font-bold text-slate-600 uppercase tracking-wider" id="pivotTitle">Pivot</div>
-                                                <div class="text-[10px] text-slate-400 mt-0.5">Many-to-many</div>
+                                                <div class="text-xs font-bold text-indigo-700 uppercase tracking-wider" id="pivotTitle">Pivot</div>
+                                                <div class="text-[10px] text-indigo-400 mt-0.5">Many-to-many</div>
                                             </div>
                                             <label class="relative inline-flex items-center cursor-pointer shrink-0">
-                                                <input type="checkbox" class="sr-only peer relation-pivot-cb" disabled />
-                                                <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600 shadow-inner"></div>
+                                                <input type="checkbox" class="sr-only peer relation-pivot-cb" disabled onchange="onPivotToggle(this)" />
+                                                <div class="w-9 h-5 bg-slate-300 peer-checked:bg-indigo-500 rounded-full transition-colors shadow-inner"></div>
+                                                <span class="absolute left-[5px] top-1/2 -translate-y-1/2 text-[7px] font-bold text-white pointer-events-none peer-checked:opacity-100 opacity-0 transition-opacity z-10">ON</span>
+                                                <span class="absolute right-[5px] top-1/2 -translate-y-1/2 text-[7px] font-bold text-slate-700 pointer-events-none peer-checked:opacity-0 opacity-100 transition-opacity z-10">OFF</span>
+                                                <div class="absolute top-[2px] left-[2px] bg-white border border-slate-300 rounded-full h-4 w-4 transition-all peer-checked:left-[18px] shadow-sm"></div>
                                             </label>
                                         </div>
                                     </div>
@@ -451,6 +467,7 @@
     var ctxTargetType = null;
     var dragData = null;
     var modalCallback = null;
+    var savingModule = false;
 
     function buildSidebarData() {
         var data = { groups: [] };
@@ -797,17 +814,20 @@
     }
 
     function apiAddModule(groupId, moduleName) {
+        if (savingModule) return;
+        savingModule = true;
         fetch('/api/sidebar-items', {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': getToken() },
             body: JSON.stringify({ moduleName: moduleName, groupId: groupId, displayOrder: 10 })
         })
         .then(function(r) { return r.json(); })
         .then(function(d) {
+            savingModule = false;
             if (d.success === false) return showToast(d.message || 'Error adding module', 'error');
             showToast('"' + moduleName + '" added', 'success');
             refreshSidebarData();
         })
-        .catch(function() { showToast('Error adding module', 'error'); });
+        .catch(function() { savingModule = false; showToast('Error adding module', 'error'); });
     }
 
     function apiRenameModule(id, newName) {
@@ -1372,22 +1392,91 @@
         var tbl = sel.value;
         var hc = document.getElementById('relationFieldsContainer');
         var dr = document.getElementById('deleteBehaviorRow');
+        var dfr = document.getElementById('displayFieldRow');
+        var dfs = document.getElementById('relDisplayFieldSelect');
+        var dpr = document.getElementById('dataPreviewRow');
+        var dpt = document.getElementById('dataPreviewTable');
         var pc = document.getElementById('pivotCard');
         var pt = document.getElementById('pivotTitle');
         var pcb = pc.querySelector('.relation-pivot-cb');
         if (!tbl) {
-            dr.style.display = 'none'; hc.innerHTML = ''; pc.style.display = 'none'; pc.style.opacity = '0.5'; pt.textContent = 'Pivot'; pcb.disabled = true; pcb.checked = false; return;
+            dr.classList.add('hidden'); dfr.classList.add('hidden'); dpr.classList.add('hidden'); hc.innerHTML = ''; pc.classList.add('hidden'); pc.style.opacity = '0.5'; pt.textContent = 'Pivot'; pcb.disabled = true; pcb.checked = false; return;
         }
-        dr.style.display = ''; pc.style.display = ''; pc.style.opacity = '1'; pt.textContent = tbl + ' Pivot'; pcb.disabled = false;
-        hc.innerHTML = '<input type="hidden" name="_rel_Name" value="' + tbl + '" /><input type="hidden" name="_rel_IsPivot" value="false" /><input type="hidden" name="_rel_DeleteBehavior" value="Cascade" />';
+        dr.classList.remove('hidden'); pc.classList.remove('hidden'); pc.style.opacity = '1'; pt.textContent = tbl + ' Pivot'; pcb.disabled = false;
+        hc.innerHTML = '<input type="hidden" name="_rel_Name" value="' + tbl + '" /><input type="hidden" name="_rel_IsPivot" value="false" /><input type="hidden" name="_rel_DeleteBehavior" value="Cascade" /><input type="hidden" name="_rel_DisplayField" value="" />';
+        // Fetch fields for display field dropdown
+        fetch('/api/module-generator/tables/' + encodeURIComponent(tbl) + '/fields')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success === false) return;
+                var fields = d.data || [];
+                dfs.innerHTML = '<option value="">-- Auto (Name) --</option>';
+                fields.forEach(function(f) {
+                    var opt = document.createElement('option');
+                    opt.value = f;
+                    opt.textContent = f;
+                    if (f === 'Name') opt.selected = true;
+                    dfs.appendChild(opt);
+                });
+                dfr.classList.remove('hidden');
+                onDisplayFieldSelect();
+            })
+            .catch(function() { dfr.classList.add('hidden'); });
+        // Fetch sample data
+        dpr.classList.remove('hidden');
+        dpt.innerHTML = '<div class="text-xs text-slate-400 text-center py-6">Loading...</div>';
+        fetch('/api/module-generator/tables/' + encodeURIComponent(tbl) + '/data?count=5')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d.success === false) {
+                    dpt.innerHTML = '<div class="text-xs text-rose-500 text-center py-4">' + escHtml(d.message) + '</div>';
+                    return;
+                }
+                var records = d.data || [];
+                if (records.length === 0) {
+                    dpt.innerHTML = '<div class="text-xs text-slate-400 text-center py-6">No records found</div>';
+                    return;
+                }
+                var headers = Object.keys(records[0]).filter(function(k) { return k !== 'Id'; });
+                if (headers.length === 0) {
+                    dpt.innerHTML = '<div class="text-xs text-slate-400 text-center py-6">No data columns</div>';
+                    return;
+                }
+                var html = '<table class="w-full text-xs"><thead><tr class="bg-slate-50 border-b border-slate-200">';
+                headers.forEach(function(h) { html += '<th class="px-3 py-2 text-left font-bold text-slate-500 uppercase">' + escHtml(h) + '</th>'; });
+                html += '</tr></thead><tbody class="divide-y divide-slate-100">';
+                records.forEach(function(r) {
+                    html += '<tr class="hover:bg-slate-50/60">';
+                    headers.forEach(function(h) { html += '<td class="px-3 py-2 text-slate-700 truncate max-w-[120px]">' + escHtml(String(r[h] ?? "")) + '</td>'; });
+                    html += '</tr>';
+                });
+                html += '</tbody></table>';
+                dpt.innerHTML = html;
+            })
+            .catch(function() { dpt.innerHTML = '<div class="text-xs text-rose-500 text-center py-4">Failed to load data</div>'; });
+    }
+
+    function onDisplayFieldSelect() {
+        var dfs = document.getElementById('relDisplayFieldSelect');
+        var hc = document.getElementById('relationFieldsContainer');
+        var h = hc.querySelector('input[name="_rel_DisplayField"]');
+        if (h) h.value = dfs.value;
+    }
+
+    function onPivotToggle(cb) {
+        var hc = document.getElementById('relationFieldsContainer');
+        var h = hc.querySelector('input[name="_rel_IsPivot"]');
+        if (h) h.value = cb.checked ? 'true' : 'false';
     }
 
     function clearRelation() {
         document.getElementById('relTableSelect').value = '';
-        document.getElementById('deleteBehaviorRow').style.display = 'none';
+        document.getElementById('deleteBehaviorRow').classList.add('hidden');
+        document.getElementById('displayFieldRow').classList.add('hidden');
+        document.getElementById('dataPreviewRow').classList.add('hidden');
         document.getElementById('relationFieldsContainer').innerHTML = '';
         var pc = document.getElementById('pivotCard');
-        pc.style.display = 'none'; pc.style.opacity = '0.5';
+        pc.classList.add('hidden'); pc.style.opacity = '0.5';
         document.getElementById('pivotTitle').textContent = 'Pivot';
         var pcb = pc.querySelector('.relation-pivot-cb');
         pcb.disabled = true; pcb.checked = false;

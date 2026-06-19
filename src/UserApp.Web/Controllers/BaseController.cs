@@ -31,6 +31,8 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
     private ICommonTableService? CommonTableService =>
         HttpContext?.RequestServices.GetService<ICommonTableService>();
 
+    protected Dictionary<string, string> DisplayFieldForEntity { get; } = new();
+
     protected BaseController(
         IBaseService<TEntity> service,
         IMapper mapper,
@@ -41,6 +43,11 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
         _mapper = mapper;
         _mediaService = mediaService;
         _permissionService = permissionService;
+    }
+
+    private string GetDisplayFieldForEntity(string entityName)
+    {
+        return DisplayFieldForEntity.TryGetValue(entityName, out var field) ? field : "Name";
     }
 
     private async Task LoadImageUrls(object vm, Guid? entityId = null)
@@ -202,7 +209,8 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
             var all = (IEnumerable<object>)toList.Invoke(null, [dbSet])!;
 
             var idProp = entityType.GetProperty("Id");
-            var nameProp = entityType.GetProperty("Name");
+            var displayField = GetDisplayFieldForEntity(entityName);
+            var nameProp = entityType.GetProperty(displayField);
             if (idProp == null || nameProp == null) return [];
 
             return all
@@ -356,7 +364,8 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
             var entities = (IEnumerable<object>)resultProperty.GetValue(task)!;
 
             var idProp = entityType.GetProperty("Id");
-            var nameProp = entityType.GetProperty("Name");
+            var displayField = GetDisplayFieldForEntity(entityName);
+            var nameProp = entityType.GetProperty(displayField);
 
             return entities.Select(e => new SelectListItem
             {
@@ -423,7 +432,8 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
             var entity = resultProperty.GetValue(task);
             if (entity == null) return null;
 
-            var nameProp = entityType.GetProperty("Name");
+            var displayField = GetDisplayFieldForEntity(entityName);
+            var nameProp = entityType.GetProperty(displayField);
             return nameProp?.GetValue(entity)?.ToString();
         }
         catch
@@ -499,7 +509,7 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
         await ResolveLookupDisplayNames([vm]);
         await ResolveRelationDisplayNames([vm]);
         await ResolvePivotSelectedIds([vm]);
-        await LoadParentData(vm);
+        await LoadChildDataAsync(id);
 
         return View("Details", vm);
     }
@@ -646,57 +656,107 @@ public abstract class BaseController<TEntity, TViewModel> : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    private async Task LoadParentData(TViewModel vm)
+    private async Task LoadChildDataAsync(Guid entityId)
     {
         var sp = HttpContext?.RequestServices;
         if (sp == null) return;
 
-        var vmType = typeof(TViewModel);
-        var parentFields = new Dictionary<string, List<KeyValuePair<string, string>>>();
+        var entityName = typeof(TEntity).Name;
+        var domainAssembly = typeof(TEntity).Assembly;
+        var childData = new List<Dictionary<string, object>>();
 
-        foreach (var prop in vmType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        foreach (var childType in domainAssembly.GetTypes())
         {
-            if (prop.PropertyType != typeof(Guid) && prop.PropertyType != typeof(Guid?)) continue;
-            if (!prop.Name.EndsWith("Id") || prop.Name == "Id") continue;
+            if (!childType.IsClass || childType.IsAbstract) continue;
+            if (childType == typeof(TEntity)) continue;
+            if (childType.Namespace == null || !childType.Namespace.StartsWith("UserApp.Domain")) continue;
+            if (childType.Namespace == "UserApp.Domain.Common") continue;
 
-            var fieldName = prop.Name[..^"Id".Length];
-            var idValue = prop.GetValue(vm);
-            if (idValue == null || (Guid)idValue == Guid.Empty) continue;
+            var fkProp = childType.GetProperty($"{entityName}Id", BindingFlags.Public | BindingFlags.Instance);
+            if (fkProp == null) continue;
+            if (fkProp.PropertyType != typeof(Guid) && fkProp.PropertyType != typeof(Guid?)) continue;
 
-            var entityName = fieldName;
-            var entityType = Type.GetType($"UserApp.Domain.{entityName}s.{entityName}, UserApp.Domain");
-            if (entityType == null) continue;
-
-            var serviceType = typeof(IBaseService<>).MakeGenericType(entityType);
+            var serviceType = typeof(IBaseService<>).MakeGenericType(childType);
             var service = sp.GetService(serviceType);
             if (service == null) continue;
 
-            var getMethod = serviceType.GetMethod("GetByIdAsync", new[] { typeof(Guid) });
-            if (getMethod == null) continue;
+            var listMethod = serviceType.GetMethod("ListAsync", new[] { typeof(int), typeof(int) });
+            if (listMethod == null) continue;
 
-            var task = (Task)getMethod.Invoke(service, new object[] { (Guid)idValue })!;
+            var task = (Task)listMethod.Invoke(service, new object[] { 0, 99999 })!;
             await task.ConfigureAwait(false);
-            var resultProperty = task.GetType().GetProperty("Result");
-            var entity = resultProperty?.GetValue(task);
-            if (entity == null) continue;
+            var resultProp = task.GetType().GetProperty("Result");
+            var allRecords = resultProp?.GetValue(task) as IEnumerable<object>;
+            if (allRecords == null) continue;
 
-            var fields = new List<KeyValuePair<string, string>>();
-            foreach (var entityProp in entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            var filtered = new List<object>();
+            foreach (var record in allRecords)
             {
-                if (entityProp.Name == "Id") continue;
-                if (entityProp.Name == "IsDeleted") continue;
-                if (entityProp.PropertyType == typeof(Guid) || entityProp.PropertyType == typeof(Guid?)) continue;
-                if (entityProp.PropertyType == typeof(DateTime) || entityProp.PropertyType == typeof(DateTime?)) continue;
-                if (typeof(System.Collections.IEnumerable).IsAssignableFrom(entityProp.PropertyType) && entityProp.PropertyType != typeof(string)) continue;
-
-                var val = entityProp.GetValue(entity);
-                fields.Add(new KeyValuePair<string, string>(entityProp.Name, val?.ToString() ?? ""));
+                var fkVal = fkProp.GetValue(record);
+                if (fkVal != null && (Guid)fkVal == entityId)
+                    filtered.Add(record);
             }
 
-            parentFields[entityName] = fields;
+            if (filtered.Count == 0) continue;
+
+            var idProp = childType.GetProperty("Id");
+            var records = new List<Dictionary<string, string>>();
+            foreach (var record in filtered)
+            {
+                var fields = new Dictionary<string, string>
+                {
+                    ["Id"] = idProp?.GetValue(record)?.ToString() ?? ""
+                };
+                foreach (var p in childType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                {
+                    if (p.Name == "Id") continue;
+                    if (p.Name == "IsDeleted") continue;
+                    if (p.Name == "CreatedAt") continue;
+                    if (p.Name == "UpdatedAt") continue;
+                    if (p.Name == "DeletedAt") continue;
+                    if (typeof(System.Collections.IEnumerable).IsAssignableFrom(p.PropertyType) && p.PropertyType != typeof(string)) continue;
+                    if (p.PropertyType.IsClass && p.PropertyType != typeof(string)) continue;
+                    if (p.PropertyType == typeof(Guid) || p.PropertyType == typeof(Guid?)) continue;
+                    if (p.PropertyType == typeof(DateTime) || p.PropertyType == typeof(DateTime?)) continue;
+                    if (p.PropertyType == typeof(byte[])) continue;
+
+                    var val = p.GetValue(record);
+                    fields[p.Name] = val?.ToString() ?? "";
+                }
+                records.Add(fields);
+            }
+
+            childData.Add(new Dictionary<string, object>
+            {
+                ["EntityName"] = childType.Name,
+                ["ControllerName"] = childType.Name,
+                ["Records"] = records
+            });
+
+            // Load image URLs for child records if supported
+            var imageMethod = serviceType.GetMethod("GetImageUrlsAsync", new[] { typeof(Guid) });
+            if (imageMethod != null)
+            {
+                foreach (var record in records)
+                {
+                    try
+                    {
+                        var recordId = Guid.Parse(record["Id"]);
+                        var imgTask = (Task)imageMethod.Invoke(service, new object[] { recordId })!;
+                        await imgTask.ConfigureAwait(false);
+                        var imgResultProp = imgTask.GetType().GetProperty("Result");
+                        var urls = imgResultProp?.GetValue(imgTask) as List<string>;
+                        if (urls != null && urls.Count > 0)
+                            record["Image"] = urls[0];
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
         }
 
-        ViewData["ParentFields"] = parentFields;
+        ViewData["ChildData"] = childData;
     }
 
     protected bool ValidateModel<T>(T model)

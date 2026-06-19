@@ -20,4 +20,5 @@ public class ModuleFieldViewModel
     public string? RelatedEntityName { get; set; }
     public bool IsPivot { get; set; }
     public string? DeleteBehavior { get; set; }
+    public string? DisplayField { get; set; }
 }

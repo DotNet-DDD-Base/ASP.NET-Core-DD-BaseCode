@@ -20,7 +20,6 @@
             <table class="w-full">
                 <thead>
                     <tr class="bg-slate-50 border-b border-slate-200">
-                        <th class="text-left px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Name</th>
 {{Columns}}
                         <th class="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -29,7 +28,6 @@
 @foreach (var p in Model.Items)
 {
                     <tr class="hover:bg-indigo-50/40 transition-colors duration-150">
-                        <td class="px-6 py-4 font-semibold text-slate-800">@p.Name</td>
 {{Rows}}
                         <td class="px-6 py-4 text-right">
                             <div class="flex items-center justify-end gap-2">
