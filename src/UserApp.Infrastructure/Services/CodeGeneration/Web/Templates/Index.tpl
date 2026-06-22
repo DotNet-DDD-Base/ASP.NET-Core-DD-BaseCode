@@ -1,4 +1,17 @@
 @model UserApp.Web.ViewModels.ListViewModel<UserApp.Web.ViewModels.{{Name}}ViewModel>
+@{
+    var _userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    HashSet<string> _perms = new();
+    if (_userId != null)
+    {
+        _perms = await PermissionChecker.GetUserPermissionsAsync(Guid.Parse(_userId));
+    }
+    var canCreate = _perms.Contains("{{Name}}.Create");
+    var canEdit = _perms.Contains("{{Name}}.Edit");
+    var canDelete = _perms.Contains("{{Name}}.Delete");
+    var canDetails = _perms.Contains("{{Name}}.Details");
+    var canAnyTableAction = canDetails || canEdit || canDelete;
+}
 
 <div class="animate-fade-in">
     <div class="flex items-center justify-between mb-8">
@@ -6,6 +19,8 @@
             <h1 class="text-3xl font-black text-slate-800 tracking-tight">{{Name}}s</h1>
             <p class="text-slate-500 text-sm mt-1">Manage your {{Name}} records</p>
         </div>
+        @if (canCreate)
+        {
         <a asp-action="Create"
            class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all duration-200 hover:-translate-y-0.5">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -13,6 +28,7 @@
             </svg>
             Create {{Name}}
         </a>
+        }
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -21,7 +37,10 @@
                 <thead>
                     <tr class="bg-slate-50 border-b border-slate-200">
 {{Columns}}
+                        @if (canAnyTableAction)
+                        {
                         <th class="text-right px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+                        }
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -29,8 +48,12 @@
 {
                     <tr class="hover:bg-indigo-50/40 transition-colors duration-150">
 {{Rows}}
+                        @if (canAnyTableAction)
+                        {
                         <td class="px-6 py-4 text-right">
                             <div class="flex items-center justify-end gap-2">
+                                @if (canDetails)
+                                {
                                 <a asp-action="Details" asp-route-id="@p.Id"
                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -38,6 +61,9 @@
                                     </svg>
                                     Details
                                 </a>
+                                }
+                                @if (canEdit)
+                                {
                                 <a asp-action="Edit" asp-route-id="@p.Id"
                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -45,6 +71,9 @@
                                     </svg>
                                     Edit
                                 </a>
+                                }
+                                @if (canDelete)
+                                {
                                 <form asp-action="Delete" asp-route-id="@p.Id" method="post" style="display:inline">
                                     <button type="button" data-confirm-delete
                                             class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors">
@@ -54,8 +83,10 @@
                                         Delete
                                     </button>
                                 </form>
+                                }
                             </div>
                         </td>
+                        }
                     </tr>
 }
                 </tbody>
