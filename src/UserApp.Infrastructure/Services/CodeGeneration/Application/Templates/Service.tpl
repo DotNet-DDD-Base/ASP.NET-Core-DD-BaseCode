@@ -9,4 +9,6 @@ public class {{Name}}Service : BaseService<{{Name}}>, I{{Name}}Service
     public {{Name}}Service(I{{Name}}Repository repo) : base(repo)
     {
     }
+
+{{ValidationCode}}
 }

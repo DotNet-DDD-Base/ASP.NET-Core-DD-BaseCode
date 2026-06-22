@@ -23,6 +23,7 @@ public class ModuleGeneratorService : IModuleGeneratorService
     private readonly ApplicationGenerator _application;
     private readonly InfrastructureGenerator _infrastructure;
     private readonly WebGenerator _web;
+    private readonly TestGenerator _test;
     private readonly DbContextUpdater _dbContextUpdater;
     private readonly MappingUpdater _mappingUpdater;
     private readonly ProgramUpdater _programUpdater;
@@ -39,6 +40,7 @@ public class ModuleGeneratorService : IModuleGeneratorService
         _application = new ApplicationGenerator(_paths, _files, _templates);
         _infrastructure = new InfrastructureGenerator(_paths, _files, _templates);
         _web = new WebGenerator(_paths, _files, _templates);
+        _test = new TestGenerator(_paths, _files, _templates);
         _dbContextUpdater = new DbContextUpdater(_files, _paths);
         _mappingUpdater = new MappingUpdater(_files, _paths);
         _programUpdater = new ProgramUpdater(_files, _paths);
@@ -63,9 +65,10 @@ public class ModuleGeneratorService : IModuleGeneratorService
         Console.WriteLine($"Generating module: {name}");
 
         _domain.Generate(name, fields, hasImage);
-        _application.Generate(name);
+        _application.Generate(name, fields);
         _infrastructure.Generate(name);
         _web.Generate(name, fields, hasImage);
+        _test.Generate(name, fields, hasImage);
 
         _mappingUpdater.Update(name);
         _dbContextUpdater.Update(name);
