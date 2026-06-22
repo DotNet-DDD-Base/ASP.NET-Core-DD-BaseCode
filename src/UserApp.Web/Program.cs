@@ -77,8 +77,6 @@ using UserApp.Application.Orders.Interfaces;
 using UserApp.Domain.OrderDetails;
 using UserApp.Application.OrderDetails;
 using UserApp.Application.OrderDetails.Interfaces;
-
-
 // ================= AUTO MODULE IMPORTS =================
 // <AUTO-USINGS-START>
 // <AUTO-USINGS-END>

@@ -21,7 +21,7 @@ public class BaseService<T> : IBaseService<T> where T : class
     public Task<List<T>> ListAsync(int skip, int take) => _repo.ListAsync(skip, take);
     public Task<int> CountAsync() => _repo.CountAsync();
 
-    public async Task AddAsync(T entity, object? file = null)
+    public virtual async Task AddAsync(T entity, object? file = null)
     {
         if (entity == null)
             throw new ArgumentNullException(nameof(entity));
@@ -42,7 +42,7 @@ public class BaseService<T> : IBaseService<T> where T : class
 
     }
 
-    public async Task UpdateAsync(T entity, object? file = null)
+    public virtual async Task UpdateAsync(T entity, object? file = null)
     {
         if (entity == null)
             throw new ArgumentNullException(nameof(entity));
