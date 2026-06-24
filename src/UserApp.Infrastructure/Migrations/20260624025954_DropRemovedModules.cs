@@ -11,26 +11,13 @@ namespace UserApp.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Ais");
-
-            migrationBuilder.DropTable(
-                name: "Cars");
-
-            migrationBuilder.DropTable(
-                name: "Cocos");
-
-            migrationBuilder.DropTable(
-                name: "Milks");
-
-            migrationBuilder.DropTable(
-                name: "Notifications");
-
-            migrationBuilder.DropTable(
-                name: "Paps");
-
-            migrationBuilder.DropTable(
-                name: "Payments");
+            migrationBuilder.Sql("drop table if exists Ais");
+            migrationBuilder.Sql("drop table if exists Cars");
+            migrationBuilder.Sql("drop table if exists Cocos");
+            migrationBuilder.Sql("drop table if exists Milks");
+            migrationBuilder.Sql("drop table if exists Notifications");
+            migrationBuilder.Sql("drop table if exists Paps");
+            migrationBuilder.Sql("drop table if exists Payments");
         }
 
         /// <inheritdoc />

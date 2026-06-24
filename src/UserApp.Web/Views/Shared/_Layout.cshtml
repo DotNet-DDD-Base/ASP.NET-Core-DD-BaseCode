@@ -131,6 +131,23 @@
         .sidebar-children.open {
             display: block;
         }
+        @@keyframes waveDot {
+            0%, 100% { transform: translateY(0); opacity: 0.4; }
+            50% { transform: translateY(-10px); opacity: 1; }
+        }
+        .wave-dots {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .wave-dot {
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            background-color: #6366f1;
+            animation: waveDot 1.2s ease-in-out infinite;
+        }
+        .wave-dot:nth-child(2) { animation-delay: 0.15s; }
+        .wave-dot:nth-child(3) { animation-delay: 0.3s; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased">
@@ -484,6 +501,16 @@
         });
     </script>
 
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 z-[9999] hidden" style="align-items:center;justify-content:center;flex-direction:column;gap:16px;background:#fff">
+        <div class="wave-dots">
+            <div class="wave-dot"></div>
+            <div class="wave-dot"></div>
+            <div class="wave-dot"></div>
+        </div>
+        <span class="text-sm font-semibold text-slate-700" id="loadingOverlayText">Processing...</span>
+    </div>
+
     <!-- Delete Confirmation Modal -->
     <div id="deleteModal" class="fixed inset-0 z-50 hidden" role="dialog">
         <div class="absolute inset-0 bg-black/50 transition-opacity"></div>
@@ -518,6 +545,14 @@
             var confirmBtn = document.getElementById('confirmDeleteBtn');
             var cancelBtn = document.getElementById('cancelDeleteBtn');
             var activeForm = null;
+            var loadingOverlay = document.getElementById('loadingOverlay');
+
+            function showLoading(msg) {
+                var el = document.getElementById('loadingOverlayText');
+                if (el && msg) el.textContent = msg;
+                loadingOverlay.style.display = 'flex';
+                loadingOverlay.classList.remove('hidden');
+            }
 
             function openModal(form) {
                 activeForm = form;
@@ -538,6 +573,7 @@
 
             confirmBtn.addEventListener('click', function () {
                 if (activeForm) {
+                    showLoading('Deleting...');
                     activeForm.submit();
                 }
                 closeModal();
@@ -551,6 +587,17 @@
 
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') closeModal();
+            });
+
+            // Loading overlay on form submit
+            document.addEventListener('submit', function (e) {
+                var form = e.target;
+                if (form.hasAttribute('data-no-loading')) return;
+                if (form.matches('[style*="display:inline"], [style*="display: inline"]')) return;
+                if (form.closest('#deleteModal')) return;
+                if (form.id === 'generateForm') return;
+                var btn = form.querySelector('[type="submit"]');
+                if (btn) showLoading(btn.value || btn.textContent.trim() || 'Processing...');
             });
         });
     </script>

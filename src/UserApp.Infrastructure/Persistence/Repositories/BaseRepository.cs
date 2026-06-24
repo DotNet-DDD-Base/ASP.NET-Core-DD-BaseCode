@@ -19,7 +19,7 @@ public class BaseRepository<T> : IBaseRepository<T> where T : class
         return await _set.FindAsync(id);
     }
 
-    public async Task<List<T>> ListAsync(int skip, int take)
+    public virtual async Task<List<T>> ListAsync(int skip, int take)
     {
         return await _set.Skip(skip).Take(take).ToListAsync();
     }

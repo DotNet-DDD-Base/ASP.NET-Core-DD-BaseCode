@@ -71,9 +71,19 @@
         <div class="flex gap-1.5">
         @foreach (var img in p.ImageUrls.Take(3))
         {
-            <img src="@img" class="w-10 h-10 rounded-lg object-cover" />
+            <div class="w-10 h-10 rounded-lg overflow-hidden ring-2 ring-slate-100">
+                <img src="@img" class="w-full h-full object-cover" />
+            </div>
+        }
+        @if (p.ImageUrls.Count > 3)
+        {
+            <span class="text-xs font-bold text-slate-400 ml-1">+@(p.ImageUrls.Count - 3)</span>
         }
         </div>
+    }
+    else
+    {
+        <span class="text-xs text-slate-400 italic">No images</span>
     }
 </td>
 
