@@ -8,9 +8,7 @@ using UserApp.Web.ViewModels.Permissions;
 using UserApp.Domain.Categorys;
 using UserApp.Domain.CommonTables;
 using UserApp.Web.ViewModels.CommonTables;
-using UserApp.Domain.Messengers;
 
-using UserApp.Domain.Products;
 using UserApp.Domain.Customers;
 using UserApp.Domain.Orders;
 using UserApp.Domain.OrderDetails;
@@ -49,10 +47,6 @@ public class MappingProfile : Profile
         CreateMap<CommonTableViewModel, CommonTable>();
 CreateMap<Category, CategoryViewModel>();
 CreateMap<CategoryViewModel, Category>();
-CreateMap<Messenger, MessengerViewModel>();
-CreateMap<MessengerViewModel, Messenger>();
-CreateMap<Product, ProductViewModel>();
-CreateMap<ProductViewModel, Product>();
 CreateMap<Customer, CustomerViewModel>();
 CreateMap<CustomerViewModel, Customer>();
 CreateMap<Order, OrderViewModel>();

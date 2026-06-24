@@ -32,15 +32,9 @@ using UserApp.Application.Categorys.Interfaces;
 using UserApp.Domain.CommonTables;
 using UserApp.Application.CommonTables;
 using UserApp.Application.CommonTables.Interfaces;
-using UserApp.Domain.Messengers;
-using UserApp.Application.Messengers;
-using UserApp.Application.Messengers.Interfaces;
 using UserApp.Domain.SidebarItems;
 using UserApp.Application.SidebarItems;
 using UserApp.Application.SidebarItems.Interfaces;
-using UserApp.Domain.Products;
-using UserApp.Application.Products;
-using UserApp.Application.Products.Interfaces;
 using UserApp.Domain.SidebarGroups;
 using UserApp.Application.SidebarGroups;
 using UserApp.Application.SidebarGroups.Interfaces;
@@ -89,9 +83,7 @@ builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
 // <AUTO-REPOSITORIES-START>
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICommonTableRepository, CommonTableRepository>();
-builder.Services.AddScoped<IMessengerRepository, MessengerRepository>();
 builder.Services.AddScoped<ISidebarItemRepository, SidebarItemRepository>();
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ISidebarGroupRepository, SidebarGroupRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
@@ -112,9 +104,7 @@ builder.Services.AddScoped(typeof(IBaseService<>), typeof(BaseService<>));
 // <AUTO-SERVICES-START>
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ICommonTableService, CommonTableService>();
-builder.Services.AddScoped<IMessengerService, MessengerService>();
 builder.Services.AddScoped<ISidebarItemService, SidebarItemService>();
-builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ISidebarGroupService, SidebarGroupService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
@@ -249,37 +239,7 @@ static async Task SyncMigrationHistoryAsync(AppDbContext db)
     try
     {
         await db.Database.ExecuteSqlRawAsync(@"
-            SET @mid = '20260615153945_Messenger_Auto', @table = 'Messengers';
-            SET @cnt = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = @table);
-            SET @stmt = IF(@cnt > 0, CONCAT('INSERT IGNORE INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`) VALUES (''', @mid, ''', ''8.0.0'')'), 'SELECT 1');
-            PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
-
-            SET @mid = '20260617164437_Product_Auto', @table = 'Products';
-            SET @cnt = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = @table);
-            SET @stmt = IF(@cnt > 0, CONCAT('INSERT IGNORE INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`) VALUES (''', @mid, ''', ''8.0.0'')'), 'SELECT 1');
-            PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
         ");
-    }
-    catch { }
-
-    // Handle DropProductsTable: drop old Products table and mark migration as applied
-    try
-    {
-        var applied = (await db.Database.GetAppliedMigrationsAsync()).ToHashSet();
-        if (!applied.Contains("20260617162359_DropProductsTable"))
-        {
-            // Drop old Products table if it still exists (bypass FK checks)
-            await db.Database.ExecuteSqlRawAsync(@"
-                SET FOREIGN_KEY_CHECKS = 0;
-                SET @has_old = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Products');
-                SET @has_status = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Products' AND COLUMN_NAME = 'Status');
-                SET @drop_stmt = IF(@has_old > 0 AND @has_status > 0, 'DROP TABLE IF EXISTS `Products`', 'SELECT 1');
-                PREPARE s FROM @drop_stmt; EXECUTE s; DEALLOCATE PREPARE s;
-                SET FOREIGN_KEY_CHECKS = 1;
-            ");
-            await db.Database.ExecuteSqlRawAsync(
-                "INSERT IGNORE INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`) VALUES ('20260617162359_DropProductsTable', '8.0.0')");
-        }
     }
     catch { }
 
@@ -340,8 +300,6 @@ static async Task SeedSidebarItems(AppDbContext db)
     {
         ("Common Tables", "CommonTable", "Master Data", 1),
         ("Categories",    "Category",    "Master Data", 2),
-        ("Products",      "Product",     "Commerce",    4),
-        ("Messengers",    "Messenger",   "Communication", 1),
         ("Media",         "Media",       "Communication", 2),
         ("Users",         "Users",       "System",      1),
         ("Roles",         "Roles",       "System",      2),
