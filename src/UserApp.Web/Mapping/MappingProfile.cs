@@ -17,6 +17,8 @@ using UserApp.Web.ViewModels.AuditLogs;
 
 
 
+
+
 namespace UserApp.Web.Mapping;
 
 public class MappingProfile : Profile
@@ -54,6 +56,9 @@ CreateMap<OrderViewModel, Order>();
 CreateMap<OrderDetail, OrderDetailViewModel>();
 CreateMap<OrderDetailViewModel, OrderDetail>();
         CreateMap<AuditLog, AuditLogViewModel>();
+
+
+
         // <AUTO-MAPPINGS-END>
         CreateMap<RoleViewModel, Role>();
         CreateMap<PermissionViewModel, Permission>();

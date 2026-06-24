@@ -11,8 +11,7 @@ namespace UserApp.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Humans");
+            migrationBuilder.Sql("drop table if exists Humans");
         }
 
         /// <inheritdoc />

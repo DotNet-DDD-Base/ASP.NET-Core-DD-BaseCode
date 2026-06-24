@@ -1,0 +1,62 @@
+@model UserApp.Web.ViewModels.ListViewModel<UserApp.Web.ViewModels.AuditLogs.AuditLogViewModel>
+
+@{
+    var totalPages = (int)Math.Ceiling((double)Model.TotalCount / Model.PageSize);
+    if (totalPages <= 1) return;
+    var visiblePages = new List<int>();
+    var startPage = Math.Max(1, Model.Page - 2);
+    var endPage = Math.Min(totalPages, Model.Page + 2);
+    for (int i = startPage; i <= endPage; i++)
+        visiblePages.Add(i);
+}
+
+<div class="flex items-center justify-between pagination-bar">
+    <p class="text-sm text-slate-500">
+        Showing <span class="font-bold">@((Model.Page - 1) * Model.PageSize + 1)</span>
+        to <span class="font-bold">@Math.Min(Model.Page * Model.PageSize, Model.TotalCount)</span>
+        of <span class="font-bold">@Model.TotalCount</span> items
+    </p>
+    <div class="flex items-center gap-1.5">
+        @if (Model.Page > 1)
+        {
+            <a data-page="@(Model.Page - 1)"
+               class="page-link px-3 py-2 text-sm font-bold text-slate-600 bg-white rounded-xl border border-slate-200 hover:bg-slate-100 hover:text-slate-900 transition-colors shadow-sm cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+        }
+        else
+        {
+            <span class="px-3 py-2 text-sm font-bold text-slate-300 bg-slate-50 rounded-xl border border-slate-200 cursor-not-allowed">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </span>
+        }
+        @foreach (var p in visiblePages)
+        {
+            <a data-page="@p"
+               class="page-link px-3 py-2 text-sm font-bold rounded-xl border transition-colors shadow-sm cursor-pointer @(p == Model.Page ? "text-white bg-indigo-600 border-indigo-600" : "text-slate-600 bg-white border-slate-200 hover:bg-slate-100 hover:text-slate-900")">
+                @p
+            </a>
+        }
+        @if (Model.Page < totalPages)
+        {
+            <a data-page="@(Model.Page + 1)"
+               class="page-link px-3 py-2 text-sm font-bold text-slate-600 bg-white rounded-xl border border-slate-200 hover:bg-slate-100 hover:text-slate-900 transition-colors shadow-sm cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+        }
+        else
+        {
+            <span class="px-3 py-2 text-sm font-bold text-slate-300 bg-slate-50 rounded-xl border border-slate-200 cursor-not-allowed">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </span>
+        }
+    </div>
+</div>

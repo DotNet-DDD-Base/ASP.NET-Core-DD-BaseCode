@@ -20,6 +20,8 @@ using UserApp.Domain.Common;
 
 
 
+
+
 namespace UserApp.Infrastructure.Persistence;
 
 public class AppDbContext : DbContext
@@ -176,7 +178,8 @@ public DbSet<CommonTable> CommonTables => Set<CommonTable>();
 public DbSet<Customer> Customers => Set<Customer>();
 public DbSet<Order> Orders => Set<Order>();
 public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
-    // <AUTO-DBSETS-END>
+
+
 
     // ==================== SYSTEM DBSets ====================
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();

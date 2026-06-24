@@ -88,6 +88,7 @@ builder.Services.AddScoped<ISidebarGroupRepository, SidebarGroupRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderDetailRepository, OrderDetailRepository>();
+
 // <AUTO-REPOSITORIES-END>
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -109,6 +110,7 @@ builder.Services.AddScoped<ISidebarGroupService, SidebarGroupService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IOrderDetailService, OrderDetailService>();
+
 // <AUTO-SERVICES-END>
 
 builder.Services.AddScoped<IUserService, UserService>();

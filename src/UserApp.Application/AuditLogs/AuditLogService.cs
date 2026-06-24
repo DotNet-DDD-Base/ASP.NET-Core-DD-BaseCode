@@ -6,7 +6,12 @@ namespace UserApp.Application.AuditLogs;
 
 public class AuditLogService : BaseService<AuditLog>, IAuditLogService
 {
-    public AuditLogService(IAuditLogRepository repo) : base(repo) { }
+    private readonly IAuditLogRepository _auditRepo;
+
+    public AuditLogService(IAuditLogRepository repo) : base(repo)
+    {
+        _auditRepo = repo;
+    }
 
     public async Task LogAsync(string userName, string action, string entityName, string entityId,
         string? pageName = null, string? functionName = null,
@@ -28,4 +33,10 @@ public class AuditLogService : BaseService<AuditLog>, IAuditLogService
         await _repo.AddAsync(audit);
         await _repo.SaveChangesAsync();
     }
+
+    public Task<List<AuditLog>> SearchAsync(string searchTerm, int skip, int take)
+        => _auditRepo.SearchAsync(searchTerm, skip, take);
+
+    public Task<int> CountSearchAsync(string searchTerm)
+        => _auditRepo.CountSearchAsync(searchTerm);
 }
