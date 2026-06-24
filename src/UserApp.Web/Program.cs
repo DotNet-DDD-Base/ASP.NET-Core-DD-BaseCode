@@ -17,18 +17,6 @@ using System.Text;
 using UserApp.Application.Common.Interfaces;
 using UserApp.Infrastructure.Media;
 using UserApp.Domain.Media;
-using UserApp.Domain.Paps;
-using UserApp.Application.Paps;
-using UserApp.Application.Paps.Interfaces;
-using UserApp.Domain.Milks;
-using UserApp.Application.Milks;
-using UserApp.Application.Milks.Interfaces;
-using UserApp.Domain.Ais;
-using UserApp.Application.Ais;
-using UserApp.Application.Ais.Interfaces;
-using UserApp.Domain.Cocos;
-using UserApp.Application.Cocos;
-using UserApp.Application.Cocos.Interfaces;
 using UserApp.Domain.Roles;
 using System.Security.Claims;
 using UserApp.Infrastructure.Security;
@@ -41,24 +29,12 @@ using UserApp.Application.Permissions;
 using UserApp.Domain.Categorys;
 using UserApp.Application.Categorys;
 using UserApp.Application.Categorys.Interfaces;
-using UserApp.Domain.Payments;
-using UserApp.Application.Payments;
-using UserApp.Application.Payments.Interfaces;
 using UserApp.Domain.CommonTables;
 using UserApp.Application.CommonTables;
 using UserApp.Application.CommonTables.Interfaces;
-using UserApp.Domain.Humans;
-using UserApp.Application.Humans;
-using UserApp.Application.Humans.Interfaces;
 using UserApp.Domain.Messengers;
 using UserApp.Application.Messengers;
 using UserApp.Application.Messengers.Interfaces;
-using UserApp.Domain.Cars;
-using UserApp.Application.Cars;
-using UserApp.Application.Cars.Interfaces;
-using UserApp.Domain.Notifications;
-using UserApp.Application.Notifications;
-using UserApp.Application.Notifications.Interfaces;
 using UserApp.Domain.SidebarItems;
 using UserApp.Application.SidebarItems;
 using UserApp.Application.SidebarItems.Interfaces;
@@ -111,17 +87,9 @@ builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
 
 // ================= AUTO REPOSITORIES =================
 // <AUTO-REPOSITORIES-START>
-builder.Services.AddScoped<IPapRepository, PapRepository>();
-builder.Services.AddScoped<IMilkRepository, MilkRepository>();
-builder.Services.AddScoped<IAiRepository, AiRepository>();
-builder.Services.AddScoped<ICocoRepository, CocoRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<ICommonTableRepository, CommonTableRepository>();
-builder.Services.AddScoped<IHumanRepository, HumanRepository>();
 builder.Services.AddScoped<IMessengerRepository, MessengerRepository>();
-builder.Services.AddScoped<ICarRepository, CarRepository>();
-builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<ISidebarItemRepository, SidebarItemRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ISidebarGroupRepository, SidebarGroupRepository>();
@@ -142,17 +110,9 @@ builder.Services.AddScoped(typeof(IBaseService<>), typeof(BaseService<>));
 
 // ================= AUTO SERVICES =================
 // <AUTO-SERVICES-START>
-builder.Services.AddScoped<IPapService, PapService>();
-builder.Services.AddScoped<IMilkService, MilkService>();
-builder.Services.AddScoped<IAiService, AiService>();
-builder.Services.AddScoped<ICocoService, CocoService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
-builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ICommonTableService, CommonTableService>();
-builder.Services.AddScoped<IHumanService, HumanService>();
 builder.Services.AddScoped<IMessengerService, MessengerService>();
-builder.Services.AddScoped<ICarService, CarService>();
-builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ISidebarItemService, SidebarItemService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ISidebarGroupService, SidebarGroupService>();
@@ -294,16 +254,6 @@ static async Task SyncMigrationHistoryAsync(AppDbContext db)
             SET @stmt = IF(@cnt > 0, CONCAT('INSERT IGNORE INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`) VALUES (''', @mid, ''', ''8.0.0'')'), 'SELECT 1');
             PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
 
-            SET @mid = '20260616154621_Car_Auto', @table = 'Cars';
-            SET @cnt = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = @table);
-            SET @stmt = IF(@cnt > 0, CONCAT('INSERT IGNORE INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`) VALUES (''', @mid, ''', ''8.0.0'')'), 'SELECT 1');
-            PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
-
-            SET @mid = '20260616154702_Notification_Auto', @table = 'Notifications';
-            SET @cnt = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = @table);
-            SET @stmt = IF(@cnt > 0, CONCAT('INSERT IGNORE INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`) VALUES (''', @mid, ''', ''8.0.0'')'), 'SELECT 1');
-            PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
-
             SET @mid = '20260617164437_Product_Auto', @table = 'Products';
             SET @cnt = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = @table);
             SET @stmt = IF(@cnt > 0, CONCAT('INSERT IGNORE INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`) VALUES (''', @mid, ''', ''8.0.0'')'), 'SELECT 1');
@@ -390,16 +340,9 @@ static async Task SeedSidebarItems(AppDbContext db)
     {
         ("Common Tables", "CommonTable", "Master Data", 1),
         ("Categories",    "Category",    "Master Data", 2),
-        ("Milks",         "Milk",        "Commerce",    1),
-        ("Paps",          "Pap",         "Commerce",    2),
-        ("Cars",          "Car",         "Commerce",    3),
         ("Products",      "Product",     "Commerce",    4),
-        ("Payments",      "Payment",     "Commerce",    5),
-        ("Humans",        "Human",       "Operations",  1),
-        ("Cocos",         "Coco",        "Operations",  2),
         ("Messengers",    "Messenger",   "Communication", 1),
         ("Media",         "Media",       "Communication", 2),
-        ("Ais",           "Ai",          "AI",          1),
         ("Users",         "Users",       "System",      1),
         ("Roles",         "Roles",       "System",      2),
         ("Permissions",   "Permissions", "System",      3),
@@ -434,7 +377,7 @@ static async Task SeedFlashMessages(AppDbContext db)
         .Select(x => x.Code)
         .ToHashSet();
 
-    var modules = new[] { "Category", "Milk", "Ai", "Pap", "Coco" };
+    var modules = new[] { "Category" };
     var actions = new[] { "Create", "Edit", "Delete" };
 
     foreach (var module in modules)

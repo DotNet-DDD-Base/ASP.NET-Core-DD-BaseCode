@@ -5,19 +5,11 @@ using Microsoft.EntityFrameworkCore;
 using UserApp.Domain.Users;
 using UserApp.Infrastructure.Persistence.Configurations;
 using MediaEntity = UserApp.Domain.Media.MediaFile;
-using UserApp.Domain.Paps;
-using UserApp.Domain.Milks;
-using UserApp.Domain.Ais;
-using UserApp.Domain.Cocos;
 using UserApp.Domain.Roles;
 using UserApp.Domain.Categorys;
-using UserApp.Domain.Payments;
 using UserApp.Domain.CommonTables;
-using UserApp.Domain.Humans;
 using UserApp.Domain.Messengers;
 
-using UserApp.Domain.Cars;
-using UserApp.Domain.Notifications;
 using UserApp.Domain.SidebarItems;
 using UserApp.Domain.Products;
 using UserApp.Domain.SidebarGroups;
@@ -177,19 +169,11 @@ public class AppDbContext : DbContext
 
     // ================= AUTO DBSets =================
     // <AUTO-DBSETS-START>
-    public DbSet<Pap> Paps => Set<Pap>();
-    public DbSet<Milk> Milks => Set<Milk>();
-    public DbSet<Ai> Ais => Set<Ai>();
-    public DbSet<Coco> Cocos => Set<Coco>();
-public DbSet<Category> Categorys => Set<Category>();
-public DbSet<Payment> Payments => Set<Payment>();
-    public DbSet<CommonTable> CommonTables => Set<CommonTable>();
-public DbSet<Human> Humans => Set<Human>();
+    public DbSet<Category> Categorys => Set<Category>();
+public DbSet<CommonTable> CommonTables => Set<CommonTable>();
 public DbSet<Messenger> Messengers => Set<Messenger>();
-public DbSet<Car> Cars => Set<Car>();
     
     public DbSet<SidebarItem> SidebarItems => Set<SidebarItem>();
-public DbSet<Notification> Notifications => Set<Notification>();
 public DbSet<Product> Products => Set<Product>();
     public DbSet<SidebarGroup> SidebarGroups => Set<SidebarGroup>();
 
