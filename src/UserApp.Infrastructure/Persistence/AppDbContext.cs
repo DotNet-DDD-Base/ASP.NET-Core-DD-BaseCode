@@ -8,10 +8,8 @@ using MediaEntity = UserApp.Domain.Media.MediaFile;
 using UserApp.Domain.Roles;
 using UserApp.Domain.Categorys;
 using UserApp.Domain.CommonTables;
-using UserApp.Domain.Messengers;
 
 using UserApp.Domain.SidebarItems;
-using UserApp.Domain.Products;
 using UserApp.Domain.SidebarGroups;
 using UserApp.Domain.Customers;
 using UserApp.Domain.Orders;
@@ -171,10 +169,8 @@ public class AppDbContext : DbContext
     // <AUTO-DBSETS-START>
     public DbSet<Category> Categorys => Set<Category>();
 public DbSet<CommonTable> CommonTables => Set<CommonTable>();
-public DbSet<Messenger> Messengers => Set<Messenger>();
     
     public DbSet<SidebarItem> SidebarItems => Set<SidebarItem>();
-public DbSet<Product> Products => Set<Product>();
     public DbSet<SidebarGroup> SidebarGroups => Set<SidebarGroup>();
 
 public DbSet<Customer> Customers => Set<Customer>();
@@ -194,7 +190,6 @@ public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
         base.OnModelCreating(modelBuilder);
 
         // <AUTO-CONFIG-START>
-        modelBuilder.ApplyConfiguration(new ProductConfiguration());
         modelBuilder.ApplyConfiguration(new OrderConfiguration());
         modelBuilder.ApplyConfiguration(new OrderDetailConfiguration());
         // <AUTO-CONFIG-END>
