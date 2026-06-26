@@ -1,0 +1,177 @@
+@model UserApp.Web.ViewModels.VerifyOtpViewModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP - UserApp</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: #f8fafc;
+            background-image: radial-gradient(circle at 50% 50%, #ffffff 0%, #f1f5f9 100%);
+            overflow-x: hidden;
+        }
+        .ambient-light {
+            background: radial-gradient(circle, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0) 70%);
+        }
+        .auth-card {
+            opacity: 0;
+            transform: translateY(16px) scale(0.98);
+            animation: cardAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.05),
+                        0 0 0 1px rgba(0, 0, 0, 0.04);
+        }
+        @@keyframes cardAppear {
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .otp-input {
+            width: 52px;
+            height: 58px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            font-family: monospace;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            background: #f8fafc;
+            outline: none;
+            transition: all 0.2s ease;
+            caret-color: #1e293b;
+        }
+        .otp-input:focus {
+            border-color: #1e293b;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+        }
+        .otp-input.filled {
+            border-color: #1e293b;
+            background: #f1f5f9;
+        }
+    </style>
+</head>
+<body class="relative flex min-h-screen w-full items-center justify-center p-4 antialiased">
+    <div class="ambient-light absolute top-0 left-0 h-full w-full pointer-events-none"></div>
+
+    <div class="auth-card z-10 w-full max-w-[440px] rounded-2xl bg-white p-8 md:p-10">
+        <div class="mb-8 text-center">
+            <div class="mx-auto mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-black shadow-md shadow-black/5">
+                <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-950 md:text-3xl">Verify OTP</h1>
+            <p class="mt-2.5 text-sm text-slate-500">Enter the 6-digit code sent to your email</p>
+            <p class="mt-1 text-xs text-slate-400">@Model.Email</p>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                <svg class="h-5 w-5 shrink-0 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                <div asp-validation-summary="All" class="list-none leading-relaxed font-medium"></div>
+            </div>
+        }
+
+        <form method="post" id="otpForm" class="space-y-6">
+            <input type="hidden" asp-for="Email" />
+            <input type="hidden" asp-for="Otp" id="otpHidden" />
+
+            <div class="flex items-center justify-center gap-3" id="otpBoxes">
+                @for (int i = 0; i < 6; i++)
+                {
+                    <input type="text"
+                           inputmode="numeric"
+                           maxlength="1"
+                           autocomplete="off"
+                           data-index="@i"
+                           class="otp-input" />
+                }
+            </div>
+
+            <button type="submit"
+                    id="submitBtn"
+                    class="group relative flex w-full transform items-center justify-center overflow-hidden rounded-xl bg-black py-4 text-sm font-semibold text-white transition-all duration-300 ease-out hover:bg-slate-900 hover:shadow-lg hover:shadow-black/5 active:scale-[0.985]">
+                <span id="btnText" class="transition-all duration-200">Verify</span>
+                <svg id="btnSpinner" class="absolute h-5 w-5 animate-spin text-white opacity-0 transition-opacity duration-200" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </button>
+        </form>
+
+        <div class="mt-8 text-center text-sm text-slate-500">
+            Didn't receive the code?
+            <a href="@Url.Action("ForgotPassword")" class="font-bold text-slate-900 hover:text-black hover:underline underline-offset-4 transition-colors duration-150">Resend</a>
+        </div>
+    </div>
+
+    <script>
+        const boxes = document.querySelectorAll('.otp-input');
+        const hidden = document.getElementById('otpHidden');
+
+        boxes.forEach((box, idx) => {
+            box.addEventListener('input', function () {
+                this.value = this.value.replace(/\D/g, '').slice(0, 1);
+                this.classList.toggle('filled', this.value.length === 1);
+                if (this.value.length === 1 && idx < 5) {
+                    boxes[idx + 1].focus();
+                }
+                syncOtp();
+            });
+
+            box.addEventListener('keydown', function (e) {
+                if (e.key === 'Backspace' && this.value.length === 0 && idx > 0) {
+                    boxes[idx - 1].focus();
+                    boxes[idx - 1].value = '';
+                    boxes[idx - 1].classList.remove('filled');
+                    syncOtp();
+                }
+            });
+
+            box.addEventListener('paste', function (e) {
+                e.preventDefault();
+                const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+                for (let i = 0; i < paste.length; i++) {
+                    if (boxes[i]) {
+                        boxes[i].value = paste[i];
+                        boxes[i].classList.toggle('filled', true);
+                    }
+                }
+                const next = Math.min(paste.length, 5);
+                boxes[next].focus();
+                syncOtp();
+            });
+        });
+
+        function syncOtp() {
+            let val = '';
+            boxes.forEach(b => val += b.value);
+            hidden.value = val;
+        }
+
+        document.getElementById('otpForm').addEventListener('submit', function () {
+            syncOtp();
+            if (hidden.value.length !== 6) return;
+            const btn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            btn.disabled = true;
+            btnText.classList.add('opacity-0');
+            btnSpinner.classList.remove('opacity-0');
+        });
+
+        boxes[0].focus();
+    </script>
+</body>
+</html>

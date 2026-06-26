@@ -132,4 +132,13 @@ public class AuthService : IAuthService
     {
         return await _userRepository.GetByEmailAsync(email);
     }
+
+    public async Task UpdatePasswordAsync(string email, string newPassword)
+    {
+        var user = await _userRepository.GetByEmailAsync(email)
+            ?? throw new Exception("User not found");
+
+        user.UpdatePasswordHash(_hasher.Hash(newPassword));
+        await _baseRepository.SaveChangesAsync();
+    }
 }

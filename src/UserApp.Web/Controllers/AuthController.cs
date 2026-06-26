@@ -8,24 +8,41 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using UserApp.Domain.Roles;
 using UserApp.Domain.Common;
+using Microsoft.Extensions.Caching.Distributed;
+using System.Text;
+using UserApp.Application.Common.Interfaces;
 
 namespace UserApp.Web.Controllers;
 
 [AllowAnonymous]
 public class AuthController : Controller
 {
+    private const int MaxOtpAttempts = 5;
+    private static readonly TimeSpan OtpTtl = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan BlockTtl = TimeSpan.FromHours(1);
+
     private readonly IAuthService _authService;
     private readonly IBaseRepository<UserRole> _userRoleBaseRepository;
     private readonly IBaseRepository<Role> _roleBaseRepository;
+    private readonly IDistributedCache _cache;
+    private readonly IEmailService _emailService;
+
+    private static string OtpCodeKey(string email) => $"otp:{email.ToLower()}";
+    private static string OtpAttemptsKey(string email) => $"otp_attempts:{email.ToLower()}";
+    private static string OtpBlockedKey(string email) => $"otp_blocked:{email.ToLower()}";
 
     public AuthController(
         IAuthService authService,
         IBaseRepository<UserRole> userRoleBaseRepository,
-        IBaseRepository<Role> roleBaseRepository)
+        IBaseRepository<Role> roleBaseRepository,
+        IDistributedCache cache,
+        IEmailService emailService)
     {
         _authService = authService;
         _userRoleBaseRepository = userRoleBaseRepository;
         _roleBaseRepository = roleBaseRepository;
+        _cache = cache;
+        _emailService = emailService;
     }
 
     [HttpGet]
@@ -109,6 +126,162 @@ public class AuthController : Controller
             ModelState.AddModelError("", ex.Message);
             return View(vm);
         }
+    }
+
+    [HttpGet]
+    public IActionResult ForgotPassword() => View();
+
+    [HttpPost]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel vm)
+    {
+        if (!ModelState.IsValid)
+            return View(vm);
+
+        var user = await _authService.GetUserByEmailAsync(vm.Email);
+        if (user == null)
+        {
+            ModelState.AddModelError("", "If this email is registered, you will receive an OTP.");
+            return View(vm);
+        }
+
+        var email = vm.Email.ToLower();
+        var otp = Random.Shared.Next(100000, 999999).ToString();
+
+        await Task.WhenAll(
+            _cache.SetStringAsync(OtpCodeKey(email), otp, new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = OtpTtl }),
+            _cache.SetStringAsync(OtpAttemptsKey(email), "0", new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = OtpTtl }),
+            _cache.RemoveAsync(OtpBlockedKey(email))
+        );
+
+        try
+        {
+            await _emailService.SendTemplateAsync(
+                vm.Email,
+                "Your Password Reset OTP",
+                "ForgotPasswordOtp.html",
+                new Dictionary<string, string>
+                {
+                    ["OTP"] = otp,
+                    ["YEAR"] = DateTime.UtcNow.Year.ToString()
+                });
+
+            TempData["Success"] = "OTP sent to your email.";
+        }
+        catch (Exception ex)
+        {
+            TempData["Success"] = $"DEV MODE: OTP is {otp} (email sending failed: {ex.Message})";
+        }
+        return RedirectToAction("VerifyOtp", new { email });
+    }
+
+    [HttpGet]
+    public IActionResult VerifyOtp(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return RedirectToAction("ForgotPassword");
+
+        return View(new VerifyOtpViewModel { Email = email });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> VerifyOtp(VerifyOtpViewModel vm)
+    {
+        if (!ModelState.IsValid)
+            return View(vm);
+
+        var email = vm.Email.ToLower();
+
+        // 1. Check if blocked
+        var blocked = await _cache.GetStringAsync(OtpBlockedKey(email));
+        if (blocked != null)
+        {
+            ModelState.AddModelError("", "Too many failed attempts. Try again in 1 hour.");
+            return View(vm);
+        }
+
+        // 2. Verify OTP
+        var storedOtp = await _cache.GetStringAsync(OtpCodeKey(email));
+
+        if (string.IsNullOrEmpty(storedOtp))
+        {
+            ModelState.AddModelError("", "OTP expired. Please request a new one.");
+            return View(vm);
+        }
+
+        if (storedOtp != vm.Otp)
+        {
+            // 3. Track failed attempt
+            var attemptsStr = await _cache.GetStringAsync(OtpAttemptsKey(email));
+            var attempts = string.IsNullOrEmpty(attemptsStr) ? 1 : int.Parse(attemptsStr) + 1;
+
+            if (attempts >= MaxOtpAttempts)
+            {
+                await Task.WhenAll(
+                    _cache.SetStringAsync(OtpBlockedKey(email), "1", new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = BlockTtl }),
+                    _cache.RemoveAsync(OtpCodeKey(email)),
+                    _cache.RemoveAsync(OtpAttemptsKey(email))
+                );
+                ModelState.AddModelError("", "Too many failed attempts. Try again in 1 hour.");
+            }
+            else
+            {
+                await _cache.SetStringAsync(OtpAttemptsKey(email), attempts.ToString(), new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = OtpTtl });
+                ModelState.AddModelError("", $"Invalid OTP. {MaxOtpAttempts - attempts} attempt(s) remaining.");
+            }
+
+            return View(vm);
+        }
+
+        // 4. Success — clean up and issue reset token
+        var resetToken = Guid.NewGuid().ToString("N");
+
+        await Task.WhenAll(
+            _cache.RemoveAsync(OtpCodeKey(email)),
+            _cache.RemoveAsync(OtpAttemptsKey(email)),
+            _cache.SetStringAsync($"reset_token:{resetToken}", email, new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = OtpTtl })
+        );
+
+        return RedirectToAction("ChangePassword", new { token = resetToken });
+    }
+
+    [HttpGet]
+    public IActionResult ChangePassword(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return RedirectToAction("ForgotPassword");
+
+        return View(new ChangePasswordViewModel { Token = token });
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ChangePassword(ChangePasswordViewModel vm)
+    {
+        if (!ModelState.IsValid)
+            return View(vm);
+
+        var tokenKey = $"reset_token:{vm.Token}";
+        var email = await _cache.GetStringAsync(tokenKey);
+
+        if (string.IsNullOrEmpty(email))
+        {
+            ModelState.AddModelError("", "Invalid or expired reset link.");
+            return View(vm);
+        }
+
+        try
+        {
+            await _authService.UpdatePasswordAsync(email, vm.NewPassword);
+        }
+        catch (Exception ex)
+        {
+            ModelState.AddModelError("", ex.Message);
+            return View(vm);
+        }
+
+        await _cache.RemoveAsync(tokenKey);
+
+        TempData["Success"] = "Password has been reset. Please sign in.";
+        return RedirectToAction("Login");
     }
 
     [HttpPost]
