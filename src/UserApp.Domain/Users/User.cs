@@ -56,4 +56,12 @@ public class User : Entity<Guid>, IAggregateRoot
         Status = UserStatus.Active;
         UpdatedAt = TimeHelper.Now;
     }
+
+    public void UpdatePasswordHash(string newHash)
+    {
+        if (string.IsNullOrWhiteSpace(newHash))
+            throw new ArgumentException("Password hash is required", nameof(newHash));
+        PasswordHash = newHash;
+        UpdatedAt = TimeHelper.Now;
+    }
 }

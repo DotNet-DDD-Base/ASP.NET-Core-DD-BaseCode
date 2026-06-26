@@ -153,7 +153,7 @@
                     <input type="checkbox" class="peer h-4 w-4 rounded border-slate-300 bg-white text-black focus:ring-0 focus:ring-offset-0 transition duration-150 checked:bg-black checked:border-black" />
                     <span class="ml-2.5 transition-colors group-hover:text-slate-800">Remember me</span>
                 </label>
-                <a href="#" class="font-semibold text-slate-900 hover:text-black hover:underline underline-offset-4 transition-colors duration-150">Forgot password?</a>
+                <a href="@Url.Action("ForgotPassword")" class="font-semibold text-slate-900 hover:text-black hover:underline underline-offset-4 transition-colors duration-150">Forgot password?</a>
             </div>
 
             <!-- Submit Button (Sleek Matte Black) -->
@@ -203,8 +203,10 @@
         <!-- Footer Actions -->
         <div class="mt-8 text-center text-sm text-slate-500">
             Don't have an account? 
-            <a href="Register" class="font-bold text-slate-900 hover:text-black hover:underline underline-offset-4 transition-colors duration-150">Sign up</a>
-        </div>
+<a asp-action="Register"
+   class="font-bold text-slate-900 hover:text-black hover:underline underline-offset-4 transition-colors duration-150">
+    Sign up
+</a>        </div>
     </div>
 
     <!-- Scripts for dynamic interactions and state transition feedbacks -->

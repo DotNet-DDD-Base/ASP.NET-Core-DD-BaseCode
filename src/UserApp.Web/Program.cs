@@ -16,6 +16,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using UserApp.Application.Common.Interfaces;
 using UserApp.Infrastructure.Media;
+using UserApp.Infrastructure.Services;
 using UserApp.Domain.Media;
 using UserApp.Domain.Roles;
 using System.Security.Claims;
@@ -124,6 +125,10 @@ builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddHttpContextAccessor();
+
+var redisConn = builder.Configuration.GetConnectionString("Redis") ?? "127.0.0.1:6379";
+builder.Services.AddStackExchangeRedisCache(options => options.Configuration = redisConn);
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<
     UserApp.Application.Common.Interfaces.IModuleGeneratorService,
     UserApp.Infrastructure.Services.ModuleGeneratorService>();
