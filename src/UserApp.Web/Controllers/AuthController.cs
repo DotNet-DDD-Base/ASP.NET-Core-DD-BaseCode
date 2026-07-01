@@ -165,20 +165,27 @@ public class AuthController : Controller
                     ["YEAR"] = DateTime.UtcNow.Year.ToString()
                 });
 
-            TempData["Success"] = "OTP sent to your email.";
         }
         catch (Exception ex)
         {
-            TempData["Success"] = $"DEV MODE: OTP is {otp} (email sending failed: {ex.Message})";
+            TempData["DevOtp"] = otp;
         }
-        return RedirectToAction("VerifyOtp", new { email });
+        return RedirectToAction("VerifyOtp", new { email, sent = true });
     }
 
     [HttpGet]
-    public IActionResult VerifyOtp(string email)
+    public IActionResult VerifyOtp(string email, bool sent = false)
     {
         if (string.IsNullOrWhiteSpace(email))
             return RedirectToAction("ForgotPassword");
+
+        if (sent)
+        {
+            var devOtp = TempData["DevOtp"] as string;
+            TempData["Success"] = devOtp != null
+                ? $"DEV MODE: OTP is {devOtp} (email sending failed)"
+                : "OTP sent to your email.";
+        }
 
         return View(new VerifyOtpViewModel { Email = email });
     }
@@ -195,7 +202,7 @@ public class AuthController : Controller
         var blocked = await _cache.GetStringAsync(OtpBlockedKey(email));
         if (blocked != null)
         {
-            ModelState.AddModelError("", "Too many failed attempts. Try again in 1 hour.");
+            ModelState.AddModelError("", "Too many attempts. Please try again later.");
             return View(vm);
         }
 
@@ -204,7 +211,7 @@ public class AuthController : Controller
 
         if (string.IsNullOrEmpty(storedOtp))
         {
-            ModelState.AddModelError("", "OTP expired. Please request a new one.");
+            ModelState.AddModelError("", "This code has expired. Please request a new one.");
             return View(vm);
         }
 
@@ -221,12 +228,12 @@ public class AuthController : Controller
                     _cache.RemoveAsync(OtpCodeKey(email)),
                     _cache.RemoveAsync(OtpAttemptsKey(email))
                 );
-                ModelState.AddModelError("", "Too many failed attempts. Try again in 1 hour.");
+                ModelState.AddModelError("", "Too many attempts. Please try again later.");
             }
             else
             {
                 await _cache.SetStringAsync(OtpAttemptsKey(email), attempts.ToString(), new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = OtpTtl });
-                ModelState.AddModelError("", $"Invalid OTP. {MaxOtpAttempts - attempts} attempt(s) remaining.");
+                ModelState.AddModelError("", "Wrong code. Please try again.");
             }
 
             return View(vm);
@@ -282,6 +289,46 @@ public class AuthController : Controller
 
         TempData["Success"] = "Password has been reset. Please sign in.";
         return RedirectToAction("Login");
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ResendOtp(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return RedirectToAction("ForgotPassword");
+
+        var user = await _authService.GetUserByEmailAsync(email);
+        if (user == null)
+            return RedirectToAction("ForgotPassword");
+
+        var normalizedEmail = email.ToLower();
+        var otp = Random.Shared.Next(100000, 999999).ToString();
+
+        await Task.WhenAll(
+            _cache.SetStringAsync(OtpCodeKey(normalizedEmail), otp, new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = OtpTtl }),
+            _cache.SetStringAsync(OtpAttemptsKey(normalizedEmail), "0", new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = OtpTtl }),
+            _cache.RemoveAsync(OtpBlockedKey(normalizedEmail))
+        );
+
+        try
+        {
+            await _emailService.SendTemplateAsync(
+                email,
+                "Your Password Reset OTP",
+                "ForgotPasswordOtp.html",
+                new Dictionary<string, string>
+                {
+                    ["OTP"] = otp,
+                    ["YEAR"] = DateTime.UtcNow.Year.ToString()
+                });
+        }
+        catch
+        {
+            TempData["DevOtp"] = otp;
+        }
+
+        TempData["Success"] = "OTP code is resend to your mail";
+        return RedirectToAction("VerifyOtp", new { email = normalizedEmail, sent = true });
     }
 
     [HttpPost]

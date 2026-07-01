@@ -46,6 +46,7 @@ public class AppDbContext : DbContext
 
         var entries = ChangeTracker.Entries()
             .Where(e => e.Entity is not AuditLog
+                && e.Entity is not AuditLogArchive
                 && e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
             .ToList();
 
@@ -183,6 +184,7 @@ public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
 
     // ==================== SYSTEM DBSets ====================
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<AuditLogArchive> AuditLogsArchive => Set<AuditLogArchive>();
 
 
 
@@ -197,6 +199,7 @@ public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
         modelBuilder.ApplyConfiguration(new OrderDetailConfiguration());
         // <AUTO-CONFIG-END>
 
+        modelBuilder.ApplyConfiguration(new AuditLogArchiveConfiguration());
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new SidebarItemConfiguration());
         modelBuilder.ApplyConfiguration(new SidebarGroupConfiguration());

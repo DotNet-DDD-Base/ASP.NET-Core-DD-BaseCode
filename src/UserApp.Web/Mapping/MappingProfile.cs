@@ -56,6 +56,7 @@ CreateMap<OrderViewModel, Order>();
 CreateMap<OrderDetail, OrderDetailViewModel>();
 CreateMap<OrderDetailViewModel, OrderDetail>();
         CreateMap<AuditLog, AuditLogViewModel>();
+        CreateMap<AuditLogArchive, AuditLogViewModel>();
 
 
 

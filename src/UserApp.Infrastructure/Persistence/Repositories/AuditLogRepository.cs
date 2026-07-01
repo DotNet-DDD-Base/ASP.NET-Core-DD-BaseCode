@@ -42,4 +42,20 @@ public class AuditLogRepository : BaseRepository<AuditLog>, IAuditLogRepository
         }
         return await q.CountAsync();
     }
+
+    public async Task<List<AuditLog>> GetBatchForDateRangeAsync(DateTime from, DateTime to, int skip, int take)
+    {
+        return await _set
+            .Where(x => x.CreatedAt >= from && x.CreatedAt < to)
+            .OrderBy(x => x.CreatedAt)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync();
+    }
+
+    public async Task<int> CountForDateRangeAsync(DateTime from, DateTime to)
+    {
+        return await _set
+            .CountAsync(x => x.CreatedAt >= from && x.CreatedAt < to);
+    }
 }

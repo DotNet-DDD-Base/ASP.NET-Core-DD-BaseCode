@@ -54,6 +54,8 @@ using UserApp.Application.OrderDetails.Interfaces;
 using UserApp.Domain.AuditLogs;
 using UserApp.Application.AuditLogs;
 using UserApp.Application.AuditLogs.Interfaces;
+using Quartz;
+using UserApp.Web.Jobs;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -123,7 +125,9 @@ builder.Services.AddScoped<IPermissionChecker, PermissionChecker>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+builder.Services.AddScoped<IAuditLogArchiveRepository, AuditLogArchiveRepository>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddScoped<IAuditLogArchiveService, AuditLogArchiveService>();
 builder.Services.AddHttpContextAccessor();
 
 var redisConn = builder.Configuration.GetConnectionString("Redis") ?? "127.0.0.1:6379";
@@ -208,6 +212,23 @@ builder.Services.AddCors(options =>
                                 .AllowAnyMethod();
                       });
 });
+
+// ------------------------------------------------
+// Quartz Scheduled Job: AuditLog Archive at 09:00 daily
+// ------------------------------------------------
+builder.Services.AddQuartz(q =>
+{
+    var jobKey = new JobKey("AuditLogArchiveJob");
+
+    q.AddJob<AuditLogArchiveJob>(opts => opts.WithIdentity(jobKey));
+
+    q.AddTrigger(opts => opts
+        .ForJob(jobKey)
+        .WithIdentity("AuditLogArchiveTrigger")
+        .WithCronSchedule("0 0 9 * * ?", x => x.InTimeZone(TimeZoneInfo.FindSystemTimeZoneById("Asia/Yangon"))));
+});
+
+builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
 var app = builder.Build();
 

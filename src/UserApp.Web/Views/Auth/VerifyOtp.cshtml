@@ -73,6 +73,16 @@
             <p class="mt-1 text-xs text-slate-400">@Model.Email</p>
         </div>
 
+        @if (TempData["Success"] != null)
+        {
+            <div class="mb-6 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+                <svg class="h-5 w-5 shrink-0 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <div class="font-medium">@TempData["Success"]</div>
+            </div>
+        }
+
         @if (!ViewData.ModelState.IsValid)
         {
             <div class="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
@@ -112,7 +122,11 @@
 
         <div class="mt-8 text-center text-sm text-slate-500">
             Didn't receive the code?
-            <a href="@Url.Action("ForgotPassword")" class="font-bold text-slate-900 hover:text-black hover:underline underline-offset-4 transition-colors duration-150">Resend</a>
+            <form method="post" action="@Url.Action("ResendOtp")" class="inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="email" value="@Model.Email" />
+                <button type="submit" class="font-bold text-slate-900 hover:text-black hover:underline underline-offset-4 transition-colors duration-150 bg-transparent border-none cursor-pointer">Resend</button>
+            </form>
         </div>
     </div>
 
