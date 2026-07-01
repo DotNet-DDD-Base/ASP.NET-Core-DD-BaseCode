@@ -196,14 +196,14 @@ public class AuthApiController : ControllerBase
         var blocked = await _cache.GetStringAsync(OtpBlockedKey(email));
         if (blocked != null)
         {
-            return BadRequest(ApiResponse<object>.Fail("Too many failed attempts. Try again in 1 hour."));
+            return BadRequest(ApiResponse<object>.Fail("Too many attempts. Please try again later."));
         }
 
         var storedOtp = await _cache.GetStringAsync(OtpCodeKey(email));
 
         if (string.IsNullOrEmpty(storedOtp))
         {
-            return BadRequest(ApiResponse<object>.Fail("OTP expired. Please request a new one."));
+            return BadRequest(ApiResponse<object>.Fail("This code has expired. Please request a new one."));
         }
 
         if (storedOtp != req.Otp)
@@ -218,11 +218,11 @@ public class AuthApiController : ControllerBase
                     _cache.RemoveAsync(OtpCodeKey(email)),
                     _cache.RemoveAsync(OtpAttemptsKey(email))
                 );
-                return BadRequest(ApiResponse<object>.Fail("Too many failed attempts. Try again in 1 hour."));
+                return BadRequest(ApiResponse<object>.Fail("Too many attempts. Please try again later."));
             }
 
             await _cache.SetStringAsync(OtpAttemptsKey(email), attempts.ToString(), new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = OtpTtl });
-            return BadRequest(ApiResponse<object>.Fail($"Invalid OTP. {MaxOtpAttempts - attempts} attempt(s) remaining."));
+            return BadRequest(ApiResponse<object>.Fail("Wrong code. Please try again."));
         }
 
         var resetToken = Guid.NewGuid().ToString("N");

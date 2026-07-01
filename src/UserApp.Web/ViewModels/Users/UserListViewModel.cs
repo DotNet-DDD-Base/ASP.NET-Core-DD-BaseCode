@@ -6,6 +6,8 @@ public class ListViewModel<T>
     public int PageSize { get; set; }
     public int TotalCount { get; set; }
     public string SearchTerm { get; set; } = string.Empty;
+    public DateTime? FromDate { get; set; }
+    public DateTime? ToDate { get; set; }
 
     public IReadOnlyList<T> Items { get; set; } = Array.Empty<T>();
 
